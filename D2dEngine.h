@@ -1,18 +1,19 @@
 ﻿#pragma once
 #include <windows.h>
 
-// C RunTime Header Files
-#include <stdlib.h>
-#include <malloc.h>
-#include <memory.h>
-#include <wchar.h>
-#include <math.h>
-
 // Direct2D Header Files
 #include <d2d1.h>
-#include <d2d1helper.h>
 #include <dwrite.h>
+#include <vector>
 #include <wincodec.h>
+
+namespace Grid
+{
+    constexpr float CellSize = 10.f;
+}
+
+// My Custom Class Header
+#include "UObject.h"
 
 #pragma comment(lib, "d2d1.lib")
 
@@ -31,7 +32,7 @@ inline void SafeRelease(Interface** ppInterfaceToRelease)
 #define Assert(b) do {if (!(b)) {OutputDebugStringA("Assert: " #b "\n");}} while(0)
 #else
 #define Assert(b)
-#endif //DEBUG || _DEBUG
+#endif 
 #endif
 
 #ifndef HINST_THISCOMPONENT
@@ -48,10 +49,20 @@ public:
     HRESULT Initialize();
     void RunMessageLoop();
 
+    HWND GetWindowHandle() const {return WindowHandle;} 
+    ID2D1HwndRenderTarget* GetRenderTarget() const { return WindowHandleRenderTarget;}
+    ID2D1SolidColorBrush* GetLightSlateGrayBrush() const {return LightSlateGrayBrush;}
+
+    std::vector<UObject*> GetObjects() const {return Objects;}
+    FORCEINLINE void AddObject(UObject* InObject)
+    {
+        Objects.push_back(InObject);
+    }
+
 private:
     HRESULT CreateDeviceIndependentResources();
     HRESULT CreateDeviceResources();
-
+ 
     void DiscardDeviceResources();
 	
     HRESULT OnRender();
@@ -59,9 +70,12 @@ private:
 
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-    HWND m_hwnd;
-    ID2D1Factory* m_pD2dFactory;
-    ID2D1HwndRenderTarget* m_pRenderTarget;
-    ID2D1SolidColorBrush* m_pLightSlateGrayBrush;
-    ID2D1SolidColorBrush* m_pCornFlowerBlueBrush;
+    HWND WindowHandle = nullptr;
+    ID2D1Factory* D2DFactory = nullptr;
+    ID2D1HwndRenderTarget* WindowHandleRenderTarget = nullptr;
+    ID2D1SolidColorBrush* LightSlateGrayBrush = nullptr;
+    ID2D1SolidColorBrush* CornFlowerBlueBrush = nullptr;
+    
+    // My Object
+    std::vector<UObject*> Objects;
 };

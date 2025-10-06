@@ -123,9 +123,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Box.cpp" />
     <ClCompile Include="D2dEngine.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="UObject.cpp" />
+    <ClInclude Include="Box.h" />
     <ClInclude Include="D2dEngine.h" />
+    <ClInclude Include="UObject.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

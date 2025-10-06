@@ -1,15 +1,21 @@
 ﻿#include "D2dEngine.h"
 
-D2dEngine::D2dEngine() : m_hwnd(nullptr), m_pD2dFactory(nullptr), m_pRenderTarget(nullptr), m_pLightSlateGrayBrush(nullptr),m_pCornFlowerBlueBrush(nullptr)
+#include "Box.h"
+
+D2dEngine::D2dEngine() : WindowHandle(nullptr), D2DFactory(nullptr), WindowHandleRenderTarget(nullptr), LightSlateGrayBrush(nullptr),CornFlowerBlueBrush(nullptr)
 {
+	UBox* PlayerBox = new UBox(10.f, 10.f, 10.f, 10.f);
+	AddObject(PlayerBox);
 }
 
 D2dEngine::~D2dEngine()
 {
-	SafeRelease(&m_pD2dFactory);
-	SafeRelease(&m_pRenderTarget);
-	SafeRelease(&m_pLightSlateGrayBrush);
-	SafeRelease(&m_pCornFlowerBlueBrush);
+	SafeRelease(&D2DFactory);
+	SafeRelease(&WindowHandleRenderTarget);
+	SafeRelease(&LightSlateGrayBrush);
+	SafeRelease(&CornFlowerBlueBrush);
+	
+	Objects.clear();
 }
 
 HRESULT D2dEngine::Initialize()
@@ -31,9 +37,9 @@ HRESULT D2dEngine::Initialize()
 
 		RegisterClassEx(&wcex);
 
-		m_hwnd = CreateWindow(
+		WindowHandle = CreateWindow(
 			L"D2dEngine",
-			L"Direct2D Engine",
+			L"WE",
 			WS_OVERLAPPEDWINDOW,
 			CW_USEDEFAULT,
 			CW_USEDEFAULT,
@@ -44,21 +50,21 @@ HRESULT D2dEngine::Initialize()
 			HINST_THISCOMPONENT,
 			this);
 
-		if (m_hwnd)
+		if (WindowHandle)
 		{
-			float dpi = GetDpiForWindow(m_hwnd);
+			float dpi = static_cast<float>(GetDpiForWindow(WindowHandle));
 
 			SetWindowPos(
-				m_hwnd,
+				WindowHandle,
 				NULL,
 				NULL,
 				NULL,
 				static_cast<int>(ceil(640.f * dpi / 96.f)),
 				static_cast<int>(ceil(480.f * dpi / 96.f)),
 				SWP_NOMOVE);
-
-			ShowWindow(m_hwnd, SW_SHOWNORMAL);
-			UpdateWindow(m_hwnd);
+			
+			ShowWindow(WindowHandle, SW_SHOWNORMAL);
+			UpdateWindow(WindowHandle);
 		}
 	}
 	return hr;
@@ -78,7 +84,7 @@ void D2dEngine::RunMessageLoop()
 HRESULT D2dEngine::CreateDeviceIndependentResources()
 {
 	HRESULT hr = S_OK;
-	hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &m_pD2dFactory);
+	hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &D2DFactory);
 	return hr;	
 }
 
@@ -86,31 +92,28 @@ HRESULT D2dEngine::CreateDeviceResources()
 {
 	HRESULT hr = S_OK;
 
-	if (!m_pRenderTarget)
+	if (!WindowHandleRenderTarget)
 	{
 		RECT rc;
-		GetClientRect(m_hwnd, &rc);
+		GetClientRect(WindowHandle, &rc);
 
 		D2D1_SIZE_U size = D2D1::SizeU(rc.right - rc.left, rc.bottom - rc.top);
-	
-	
+		
 		// Create Direct2D render Target
-		hr = m_pD2dFactory->CreateHwndRenderTarget(
+		hr = D2DFactory->CreateHwndRenderTarget(
 			D2D1::RenderTargetProperties(),
-			D2D1::HwndRenderTargetProperties(m_hwnd, size),
-			&m_pRenderTarget);
-
+			D2D1::HwndRenderTargetProperties(WindowHandle, size),
+			&WindowHandleRenderTarget);
+		
 		if (SUCCEEDED(hr))
 		{
-			hr = m_pRenderTarget->CreateSolidColorBrush(
+			hr = WindowHandleRenderTarget->CreateSolidColorBrush(
 				D2D1::ColorF(D2D1::ColorF::LightSlateGray),
-				&m_pLightSlateGrayBrush);
-		}
-		if (SUCCEEDED(hr))
-		{
-			hr = m_pRenderTarget->CreateSolidColorBrush(
+				&LightSlateGrayBrush);
+
+			hr = WindowHandleRenderTarget->CreateSolidColorBrush(
 				D2D1::ColorF(D2D1::ColorF::CornflowerBlue),
-				&m_pCornFlowerBlueBrush);
+				&CornFlowerBlueBrush);
 		}
 	}
 	return hr;
@@ -118,9 +121,9 @@ HRESULT D2dEngine::CreateDeviceResources()
 
 void D2dEngine::DiscardDeviceResources()
 {
-	SafeRelease(&m_pRenderTarget);
-	SafeRelease(&m_pLightSlateGrayBrush);
-	SafeRelease(&m_pCornFlowerBlueBrush);
+	SafeRelease(&WindowHandleRenderTarget);
+	SafeRelease(&LightSlateGrayBrush);
+	SafeRelease(&CornFlowerBlueBrush);
 }
 
 HRESULT D2dEngine::OnRender()
@@ -130,54 +133,44 @@ HRESULT D2dEngine::OnRender()
 
 	if (SUCCEEDED(hr))
 	{
-		m_pRenderTarget->BeginDraw();
-		m_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-		m_pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::White));
-
+		WindowHandleRenderTarget->BeginDraw();
+		WindowHandleRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
+		WindowHandleRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::White));
 		
-		// Draw a grid background.
-		D2D1_SIZE_F rtSize = m_pRenderTarget->GetSize();
-		int width = static_cast<int>(rtSize.width);
-		int height = static_cast<int>(rtSize.height);
-
-		for (int x = 0; x < width; x += 10)
+		// Draw Grid
+		float GridWidth = WindowHandleRenderTarget->GetSize().width;
+		float GridHeight = WindowHandleRenderTarget->GetSize().height;
+		float GridSize = Grid::CellSize;
+		
+		for (float x = 0; x <= GridWidth; x += GridSize)
 		{
-			m_pRenderTarget->DrawLine(
-				D2D1::Point2F(static_cast<FLOAT>(x), 0.0f),
-				D2D1::Point2F(static_cast<FLOAT>(x), rtSize.height),
-				m_pLightSlateGrayBrush,
-				0.5f
+			WindowHandleRenderTarget->DrawLine(
+				D2D1::Point2F(x, 0.0f),
+				D2D1::Point2F(x, GridHeight),
+				LightSlateGrayBrush,
+				.5f
 				);
 		}
-		for (int y = 0; y < height; y += 10)
+		for (float y = 0; y <= GridHeight; y += GridSize)
 		{
-			m_pRenderTarget->DrawLine(
-				D2D1::Point2F(0.0f, static_cast<FLOAT>(y)),
-				D2D1::Point2F(rtSize.width, static_cast<FLOAT>(y)),
-				m_pLightSlateGrayBrush,
-				0.5f
+			WindowHandleRenderTarget->DrawLine(
+				D2D1::Point2F(0.0f, y),
+				D2D1::Point2F(GridWidth, y),
+				LightSlateGrayBrush,
+				.5f
 				);
 		}
-
-		// Draw two rectangles.
-		D2D1_RECT_F rectangle1 = D2D1::RectF(
-			rtSize.width/2 - 50.0f,
-			rtSize.height/2 - 50.0f,
-			rtSize.width/2 + 50.0f,
-			rtSize.height/2 + 50.0f
-			);
-
-		D2D1_RECT_F rectangle2 = D2D1::RectF(
-			rtSize.width/2 - 100.0f,
-			rtSize.height/2 - 100.0f,
-			rtSize.width/2 + 100.0f,
-			rtSize.height/2 + 100.0f
-			);
 		
-		m_pRenderTarget->FillRectangle(&rectangle1, m_pLightSlateGrayBrush);
-		m_pRenderTarget->DrawRectangle(&rectangle2, m_pCornFlowerBlueBrush);
-
-		hr = m_pRenderTarget->EndDraw();
+		// Draw Objects
+		if (!Objects.empty())
+		{
+			for (auto& Object : Objects)
+			{
+				Object->Render(WindowHandleRenderTarget, LightSlateGrayBrush);
+			}
+		}
+		
+		hr = WindowHandleRenderTarget->EndDraw();
 	}
 	
 	if (hr == D2DERR_RECREATE_TARGET)
@@ -191,9 +184,9 @@ HRESULT D2dEngine::OnRender()
 
 void D2dEngine::OnResize(UINT width, UINT height)
 {
-	if (m_pRenderTarget)
+	if (WindowHandleRenderTarget)
 	{
-		m_pRenderTarget->Resize(D2D1::SizeU(width, height));
+		WindowHandleRenderTarget->Resize(D2D1::SizeU(width, height));
 	}
 }
 
@@ -212,13 +205,36 @@ LRESULT D2dEngine::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 	}
 	else
 	{
-		D2dEngine* D2d = reinterpret_cast<D2dEngine*>(static_cast<LONG_PTR>(GetWindowLongPtrW(hWnd, GWLP_USERDATA)));
+		D2dEngine* D2d = reinterpret_cast<D2dEngine*>((GetWindowLongPtrW(hWnd, GWLP_USERDATA)));
 		bool bHandled = false;
 
 		if (D2d)
 		{
 			switch (message)
 			{
+			case WM_KEYDOWN:
+				{
+					constexpr float MoveSpeed = 10.f;
+					if ((D2d->Objects[0] == nullptr)) break;
+						
+					switch (wParam)
+					{
+					case 'W':
+						dynamic_cast<UBox*>(D2d->Objects[0])->Move(0, -MoveSpeed);
+						break;
+					case 'A':
+						dynamic_cast<UBox*>(D2d->Objects[0])->Move(-MoveSpeed, 0);
+						break;
+					case 'S':
+						dynamic_cast<UBox*>(D2d->Objects[0])->Move(0, MoveSpeed);
+						break;
+					case 'D':
+						dynamic_cast<UBox*>(D2d->Objects[0])->Move(MoveSpeed, 0);
+						break;						
+					}
+					InvalidateRect(hWnd, nullptr, FALSE);
+				}
+				break;
 			case WM_SIZE:
 				{
 					UINT width = LOWORD(lParam);
