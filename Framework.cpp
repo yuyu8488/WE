@@ -1,15 +1,16 @@
-﻿#include "D2dEngine.h"
+#include "Framework.h"
 
-#include "Box.h"
+#include "Object/Box.h"
 
-D2dEngine::D2dEngine() : WindowHandle(nullptr), D2DFactory(nullptr), WindowHandleRenderTarget(nullptr), LightSlateGrayBrush(nullptr),CornFlowerBlueBrush(nullptr)
+Framework::Framework() : WindowHandle(nullptr), D2DFactory(nullptr), WindowHandleRenderTarget(nullptr), LightSlateGrayBrush(nullptr),CornFlowerBlueBrush(nullptr)
 {
 	UBox* PlayerBox = new UBox(10.f, 10.f, 10.f, 10.f);
 	AddObject(PlayerBox);
 }
 
-D2dEngine::~D2dEngine()
+Framework::~Framework()
 {
+	
 	SafeRelease(&D2DFactory);
 	SafeRelease(&WindowHandleRenderTarget);
 	SafeRelease(&LightSlateGrayBrush);
@@ -18,7 +19,7 @@ D2dEngine::~D2dEngine()
 	Objects.clear();
 }
 
-HRESULT D2dEngine::Initialize()
+HRESULT Framework::Initialize()
 {
 	HRESULT hr = CreateDeviceIndependentResources();
 
@@ -26,7 +27,7 @@ HRESULT D2dEngine::Initialize()
 	{
 		WNDCLASSEX wcex = {sizeof(WNDCLASSEX)};
 		wcex.style = CS_HREDRAW | CS_VREDRAW;
-		wcex.lpfnWndProc = D2dEngine::WndProc;
+		wcex.lpfnWndProc = Framework::WndProc;
 		wcex.cbClsExtra = 0;
 		wcex.cbWndExtra = sizeof(LONG_PTR);
 		wcex.hInstance = HINST_THISCOMPONENT;
@@ -70,7 +71,7 @@ HRESULT D2dEngine::Initialize()
 	return hr;
 }
 
-void D2dEngine::RunMessageLoop()
+void Framework::RunMessageLoop()
 {
 	MSG msg;
 
@@ -81,14 +82,14 @@ void D2dEngine::RunMessageLoop()
 	}
 }
 
-HRESULT D2dEngine::CreateDeviceIndependentResources()
+HRESULT Framework::CreateDeviceIndependentResources()
 {
 	HRESULT hr = S_OK;
 	hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &D2DFactory);
 	return hr;	
 }
 
-HRESULT D2dEngine::CreateDeviceResources()
+HRESULT Framework::CreateDeviceResources()
 {
 	HRESULT hr = S_OK;
 
@@ -119,14 +120,14 @@ HRESULT D2dEngine::CreateDeviceResources()
 	return hr;
 }
 
-void D2dEngine::DiscardDeviceResources()
+void Framework::DiscardDeviceResources()
 {
 	SafeRelease(&WindowHandleRenderTarget);
 	SafeRelease(&LightSlateGrayBrush);
 	SafeRelease(&CornFlowerBlueBrush);
 }
 
-HRESULT D2dEngine::OnRender()
+HRESULT Framework::OnRender()
 {
 	HRESULT hr = S_OK;
 	hr = CreateDeviceResources();
@@ -182,7 +183,7 @@ HRESULT D2dEngine::OnRender()
 	return hr;
 }
 
-void D2dEngine::OnResize(UINT width, UINT height)
+void Framework::OnResize(UINT width, UINT height)
 {
 	if (WindowHandleRenderTarget)
 	{
@@ -190,14 +191,14 @@ void D2dEngine::OnResize(UINT width, UINT height)
 	}
 }
 
-LRESULT D2dEngine::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT Framework::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT result = 0;
 
 	if (message == WM_CREATE)
 	{
 		LPCREATESTRUCT pcs = (LPCREATESTRUCT)lParam;
-		D2dEngine* D2d = (D2dEngine*)pcs->lpCreateParams;
+		Framework* D2d = (Framework*)pcs->lpCreateParams;
 
 		SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(D2d));
 
@@ -205,7 +206,7 @@ LRESULT D2dEngine::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 	}
 	else
 	{
-		D2dEngine* D2d = reinterpret_cast<D2dEngine*>((GetWindowLongPtrW(hWnd, GWLP_USERDATA)));
+		Framework* D2d = reinterpret_cast<Framework*>((GetWindowLongPtrW(hWnd, GWLP_USERDATA)));
 		bool bHandled = false;
 
 		if (D2d)

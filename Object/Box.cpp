@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Box.h"
 #include <d2d1helper.h>

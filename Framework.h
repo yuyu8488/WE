@@ -1,11 +1,12 @@
 ﻿#pragma once
 #include <windows.h>
 
-// Direct2D Header Files
 #include <d2d1.h>
 #include <dwrite.h>
 #include <vector>
 #include <wincodec.h>
+
+#include "Engine/D3DEngine.h"
 
 namespace Grid
 {
@@ -13,19 +14,19 @@ namespace Grid
 }
 
 // My Custom Class Header
-#include "UObject.h"
+#include "Object/UObject.h"
 
 #pragma comment(lib, "d2d1.lib")
 
-template <class Interface>
-inline void SafeRelease(Interface** ppInterfaceToRelease)
-{
-    if (*ppInterfaceToRelease != NULL)
-    {
-        (*ppInterfaceToRelease)->Release();
-        (*ppInterfaceToRelease) = NULL;
-    }
-}
+// template <class Interface>
+// inline void SafeRelease(Interface** ppInterfaceToRelease)
+// {
+//     if (*ppInterfaceToRelease != NULL)
+//     {
+//         (*ppInterfaceToRelease)->Release();
+//         (*ppInterfaceToRelease) = NULL;
+//     }
+// }
 
 #ifndef Assert
 #if defined( DEBUG ) || defined( _DEBUG )
@@ -40,11 +41,11 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
 #endif
 
-class D2dEngine
+class Framework
 {
 public:
-    D2dEngine();
-    ~D2dEngine();
+    Framework();
+    ~Framework();
 
     HRESULT Initialize();
     void RunMessageLoop();
