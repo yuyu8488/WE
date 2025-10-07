@@ -124,7 +124,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Framework.cpp" />
-    <ClCompile Include="Engine\D3DEngine.cpp">
+    <ClCompile Include="Engine\D3D11Engine.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <Optimization>Disabled</Optimization>
@@ -354,7 +354,7 @@
       <LinkCompiled>true</LinkCompiled>
     </ClCompile>
     <ClInclude Include="Framework.h" />
-    <ClInclude Include="Engine\D3DEngine.h" />
+    <ClInclude Include="Engine\D3D11Engine.h" />
     <ClInclude Include="Object\Box.h" />
     <ClInclude Include="Object\UObject.h" />
   </ItemGroup>

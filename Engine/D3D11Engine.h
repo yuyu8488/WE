@@ -18,11 +18,11 @@ inline void SafeRelease(Interface** ppInterfaceToRelease)
     }
 }
 
-class D3DEngine
+class D3D11Engine
 {
 public:
-    D3DEngine();
-    ~D3DEngine();
+    D3D11Engine();
+    ~D3D11Engine();
 
     HRESULT Initialize(HWND WindowHandle, int Width, int Height);
     

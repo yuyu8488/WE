@@ -2,7 +2,7 @@
 
 #include "Object/Box.h"
 
-Framework::Framework() : WindowHandle(nullptr), D2DFactory(nullptr), WindowHandleRenderTarget(nullptr), LightSlateGrayBrush(nullptr),CornFlowerBlueBrush(nullptr)
+Framework::Framework() : WindowHandle(nullptr), D2DFactory(nullptr), RenderTarget(nullptr), LightSlateGrayBrush(nullptr),CornFlowerBlueBrush(nullptr)
 {
 	UBox* PlayerBox = new UBox(10.f, 10.f, 10.f, 10.f);
 	AddObject(PlayerBox);
@@ -10,9 +10,8 @@ Framework::Framework() : WindowHandle(nullptr), D2DFactory(nullptr), WindowHandl
 
 Framework::~Framework()
 {
-	
 	SafeRelease(&D2DFactory);
-	SafeRelease(&WindowHandleRenderTarget);
+	SafeRelease(&RenderTarget);
 	SafeRelease(&LightSlateGrayBrush);
 	SafeRelease(&CornFlowerBlueBrush);
 	
@@ -34,12 +33,12 @@ HRESULT Framework::Initialize()
 		wcex.hbrBackground = nullptr;
 		wcex.lpszMenuName = nullptr;
 		wcex.hCursor = LoadCursor(nullptr, IDI_APPLICATION);
-		wcex.lpszClassName = L"D2dEngine";
+		wcex.lpszClassName = L"Framework";
 
 		RegisterClassEx(&wcex);
 
 		WindowHandle = CreateWindow(
-			L"D2dEngine",
+			L"Framework",
 			L"WE",
 			WS_OVERLAPPEDWINDOW,
 			CW_USEDEFAULT,
@@ -50,11 +49,10 @@ HRESULT Framework::Initialize()
 			nullptr,
 			HINST_THISCOMPONENT,
 			this);
-
+		
 		if (WindowHandle)
 		{
 			float dpi = static_cast<float>(GetDpiForWindow(WindowHandle));
-
 			SetWindowPos(
 				WindowHandle,
 				NULL,
@@ -63,6 +61,14 @@ HRESULT Framework::Initialize()
 				static_cast<int>(ceil(640.f * dpi / 96.f)),
 				static_cast<int>(ceil(480.f * dpi / 96.f)),
 				SWP_NOMOVE);
+			
+			RECT rc;
+			GetClientRect(WindowHandle, &rc);
+			hr = D3D11.Initialize(WindowHandle, rc.right - rc.left, rc.bottom - rc.top);
+			if (FAILED(hr))
+			{
+				return hr;
+			}
 			
 			ShowWindow(WindowHandle, SW_SHOWNORMAL);
 			UpdateWindow(WindowHandle);
@@ -89,32 +95,33 @@ HRESULT Framework::CreateDeviceIndependentResources()
 	return hr;	
 }
 
-HRESULT Framework::CreateDeviceResources()
+HRESULT Framework::CreateDeviceResources(int Width, int Height)
 {
 	HRESULT hr = S_OK;
 
-	if (!WindowHandleRenderTarget)
+	if (!RenderTarget)
 	{
-		RECT rc;
-		GetClientRect(WindowHandle, &rc);
-
-		D2D1_SIZE_U size = D2D1::SizeU(rc.right - rc.left, rc.bottom - rc.top);
-		
-		// Create Direct2D render Target
-		hr = D2DFactory->CreateHwndRenderTarget(
-			D2D1::RenderTargetProperties(),
-			D2D1::HwndRenderTargetProperties(WindowHandle, size),
-			&WindowHandleRenderTarget);
-		
-		if (SUCCEEDED(hr))
+		IDXGISurface* BackBufferSurface = D3D11.GetBackBufferSurface();
+		if (BackBufferSurface)
 		{
-			hr = WindowHandleRenderTarget->CreateSolidColorBrush(
-				D2D1::ColorF(D2D1::ColorF::LightSlateGray),
-				&LightSlateGrayBrush);
+			float Dpi = static_cast<float>(GetDpiForWindow(WindowHandle));
 
-			hr = WindowHandleRenderTarget->CreateSolidColorBrush(
-				D2D1::ColorF(D2D1::ColorF::CornflowerBlue),
-				&CornFlowerBlueBrush);
+			D2D1_RENDER_TARGET_PROPERTIES RenderTargetProperties = D2D1::RenderTargetProperties(
+				D2D1_RENDER_TARGET_TYPE_DEFAULT,
+				D2D1::PixelFormat(DXGI_FORMAT_UNKNOWN, D2D1_ALPHA_MODE_PREMULTIPLIED),
+				Dpi,
+				Dpi);
+
+			hr = D2DFactory->CreateDxgiSurfaceRenderTarget(
+				BackBufferSurface,
+				&RenderTargetProperties,
+				&RenderTarget);
+
+			if (SUCCEEDED(hr))
+			{
+				hr = RenderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::LightSlateGray), &LightSlateGrayBrush);
+				hr = RenderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::CornflowerBlue), &CornFlowerBlueBrush);
+			}
 		}
 	}
 	return hr;
@@ -122,30 +129,32 @@ HRESULT Framework::CreateDeviceResources()
 
 void Framework::DiscardDeviceResources()
 {
-	SafeRelease(&WindowHandleRenderTarget);
+	SafeRelease(&RenderTarget);
 	SafeRelease(&LightSlateGrayBrush);
 	SafeRelease(&CornFlowerBlueBrush);
 }
 
 HRESULT Framework::OnRender()
 {
-	HRESULT hr = S_OK;
-	hr = CreateDeviceResources();
-
+	RECT rc;
+	GetClientRect(WindowHandle, &rc);
+	HRESULT hr = CreateDeviceResources(rc.right - rc.left, rc.bottom - rc.top);
+	
 	if (SUCCEEDED(hr))
 	{
-		WindowHandleRenderTarget->BeginDraw();
-		WindowHandleRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-		WindowHandleRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::White));
+		D3D11.BeginRender();
+		
+		RenderTarget->BeginDraw();
+		RenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
 		
 		// Draw Grid
-		float GridWidth = WindowHandleRenderTarget->GetSize().width;
-		float GridHeight = WindowHandleRenderTarget->GetSize().height;
+		float GridWidth = RenderTarget->GetSize().width;
+		float GridHeight = RenderTarget->GetSize().height;
 		float GridSize = Grid::CellSize;
 		
 		for (float x = 0; x <= GridWidth; x += GridSize)
 		{
-			WindowHandleRenderTarget->DrawLine(
+			RenderTarget->DrawLine(
 				D2D1::Point2F(x, 0.0f),
 				D2D1::Point2F(x, GridHeight),
 				LightSlateGrayBrush,
@@ -154,7 +163,7 @@ HRESULT Framework::OnRender()
 		}
 		for (float y = 0; y <= GridHeight; y += GridSize)
 		{
-			WindowHandleRenderTarget->DrawLine(
+			RenderTarget->DrawLine(
 				D2D1::Point2F(0.0f, y),
 				D2D1::Point2F(GridWidth, y),
 				LightSlateGrayBrush,
@@ -167,11 +176,13 @@ HRESULT Framework::OnRender()
 		{
 			for (auto& Object : Objects)
 			{
-				Object->Render(WindowHandleRenderTarget, LightSlateGrayBrush);
+				Object->Render(RenderTarget, LightSlateGrayBrush);
 			}
 		}
 		
-		hr = WindowHandleRenderTarget->EndDraw();
+		hr = RenderTarget->EndDraw();
+
+		D3D11.EndRender();
 	}
 	
 	if (hr == D2DERR_RECREATE_TARGET)
@@ -185,9 +196,9 @@ HRESULT Framework::OnRender()
 
 void Framework::OnResize(UINT width, UINT height)
 {
-	if (WindowHandleRenderTarget)
+	if (RenderTarget)
 	{
-		WindowHandleRenderTarget->Resize(D2D1::SizeU(width, height));
+		//WindowHandleRenderTarget->Resize(D2D1::SizeU(width, height));
 	}
 }
 

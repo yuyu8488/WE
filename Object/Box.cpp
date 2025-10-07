@@ -8,7 +8,7 @@ UBox::UBox(float InPositionX, float InPositionY, float InWidth, float InHeight)
     Rect = D2D1::RectF(InPositionX, InPositionY, InPositionX + InWidth, InPositionY+InHeight);
 }
 
-void UBox::Render(ID2D1HwndRenderTarget* RenderTarget, ID2D1SolidColorBrush* Brush)
+void UBox::Render(ID2D1RenderTarget* RenderTarget, ID2D1SolidColorBrush* Brush)
 {
     if (Brush)
     {

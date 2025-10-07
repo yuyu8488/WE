@@ -12,5 +12,5 @@ public:
     UObject(const UObject&&) = delete;
     UObject& operator=(const UObject&&) = delete;
 
-    virtual void Render(ID2D1HwndRenderTarget* RenderTarget, ID2D1SolidColorBrush* SolidColorBrush);
+    virtual void Render(ID2D1RenderTarget* RenderTarget, ID2D1SolidColorBrush* SolidColorBrush);
 };

@@ -8,7 +8,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLi
 
     if (SUCCEEDED(CoInitialize(nullptr)))
     {
-        Framework* MyFramework = new Framework();
+        Framework* MyFramework = nullptr;
+        MyFramework = new Framework();
             
         if (SUCCEEDED(MyFramework->Initialize()))
         {                

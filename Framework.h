@@ -6,7 +6,7 @@
 #include <vector>
 #include <wincodec.h>
 
-#include "Engine/D3DEngine.h"
+#include "Engine/D3D11Engine.h"
 
 namespace Grid
 {
@@ -51,7 +51,7 @@ public:
     void RunMessageLoop();
 
     HWND GetWindowHandle() const {return WindowHandle;} 
-    ID2D1HwndRenderTarget* GetRenderTarget() const { return WindowHandleRenderTarget;}
+    ID2D1RenderTarget* GetRenderTarget() const { return RenderTarget;}
     ID2D1SolidColorBrush* GetLightSlateGrayBrush() const {return LightSlateGrayBrush;}
 
     std::vector<UObject*> GetObjects() const {return Objects;}
@@ -62,7 +62,7 @@ public:
 
 private:
     HRESULT CreateDeviceIndependentResources();
-    HRESULT CreateDeviceResources();
+    HRESULT CreateDeviceResources(int Width, int Height);
  
     void DiscardDeviceResources();
 	
@@ -71,9 +71,11 @@ private:
 
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
+    D3D11Engine D3D11;
+    
     HWND WindowHandle = nullptr;
     ID2D1Factory* D2DFactory = nullptr;
-    ID2D1HwndRenderTarget* WindowHandleRenderTarget = nullptr;
+    ID2D1RenderTarget* RenderTarget = nullptr;
     ID2D1SolidColorBrush* LightSlateGrayBrush = nullptr;
     ID2D1SolidColorBrush* CornFlowerBlueBrush = nullptr;
     

@@ -1,15 +1,15 @@
-﻿#include "D3DEngine.h"
+﻿#include "D3D11Engine.h"
 
-D3DEngine::D3DEngine()
+D3D11Engine::D3D11Engine()
 {
 }
 
-D3DEngine::~D3DEngine()
+D3D11Engine::~D3D11Engine()
 {
     Cleanup();
 }
 
-HRESULT D3DEngine::Initialize(HWND WindowHandle, int Width, int Height)
+HRESULT D3D11Engine::Initialize(HWND WindowHandle, int Width, int Height)
 {
     HRESULT ResultHandle = S_OK;
     
@@ -96,7 +96,7 @@ HRESULT D3DEngine::Initialize(HWND WindowHandle, int Width, int Height)
     return S_OK;
 }
 
-void D3DEngine::Cleanup()
+void D3D11Engine::Cleanup()
 {
     SafeRelease(&DepthStencilView);
     SafeRelease(&DepthStencilBuffer);
@@ -106,19 +106,19 @@ void D3DEngine::Cleanup()
     SafeRelease(&D3DDevice);
 }
 
-void D3DEngine::BeginRender()
+void D3D11Engine::BeginRender()
 {
     float color[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
     D3DDeviceContext->ClearRenderTargetView(RenderTargetView, color);
     D3DDeviceContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
-void D3DEngine::EndRender()
+void D3D11Engine::EndRender()
 {
     SwapChain->Present(1, 0);
 }
 
-IDXGISurface* D3DEngine::GetBackBufferSurface()
+IDXGISurface* D3D11Engine::GetBackBufferSurface()
 {
     IDXGISurface* pBackBuffer = nullptr;
     if (SwapChain)
