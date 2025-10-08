@@ -1,5 +1,7 @@
 ﻿#include "D3D11Engine.h"
 
+#include "Utility/ComUtils.h"
+
 D3D11Engine::D3D11Engine()
 {
 }
@@ -28,19 +30,34 @@ HRESULT D3D11Engine::Initialize(HWND WindowHandle, int Width, int Height)
     SwapChainDesc.SampleDesc.Quality = 0;
     SwapChainDesc.Windowed = TRUE;
 
-    D3D_FEATURE_LEVEL FeatureLevels = D3D_FEATURE_LEVEL_11_0;
+    IDXGIFactory1* Factory = nullptr;
+    ResultHandle = CreateDXGIFactory1(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&Factory));
+    if (FAILED(ResultHandle))
+    {
+        return ResultHandle;
+    }
+    IDXGIAdapter1* Adapter = nullptr;
+    ResultHandle = Factory->EnumAdapters1(0, &Adapter);
+    if (FAILED(ResultHandle))
+    {
+        return ResultHandle;
+    }
+    
+    D3D_FEATURE_LEVEL FeatureLevelsRequested = D3D_FEATURE_LEVEL_11_0;
+    UINT NumLevelsRequested = 1;
+    D3D_FEATURE_LEVEL FeatureLevelsSupported;
     ResultHandle = D3D11CreateDeviceAndSwapChain(
-        nullptr,
-        D3D_DRIVER_TYPE_HARDWARE,
+        Adapter,
+        D3D_DRIVER_TYPE_UNKNOWN,
         nullptr,
         D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-        nullptr,
-        0,
+        &FeatureLevelsRequested,
+        NumLevelsRequested,
         D3D11_SDK_VERSION,
         &SwapChainDesc,
         &SwapChain,
         &D3DDevice,
-        &FeatureLevels,
+        &FeatureLevelsSupported,
         &D3DDeviceContext);
     if (FAILED(ResultHandle))
     {

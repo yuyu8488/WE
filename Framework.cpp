@@ -1,5 +1,6 @@
 #include "Framework.h"
 
+#include "Engine/Utility/ComUtils.h"
 #include "Object/Box.h"
 
 Framework::Framework() : WindowHandle(nullptr), D2DFactory(nullptr), RenderTarget(nullptr), LightSlateGrayBrush(nullptr),CornFlowerBlueBrush(nullptr)
@@ -143,7 +144,6 @@ HRESULT Framework::OnRender()
 	if (SUCCEEDED(hr))
 	{
 		D3D11.BeginRender();
-		
 		RenderTarget->BeginDraw();
 		RenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
 		
@@ -181,7 +181,6 @@ HRESULT Framework::OnRender()
 		}
 		
 		hr = RenderTarget->EndDraw();
-
 		D3D11.EndRender();
 	}
 	

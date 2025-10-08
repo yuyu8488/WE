@@ -7,6 +7,10 @@
 #include <wincodec.h>
 
 #include "Engine/D3D11Engine.h"
+#include "Engine/Graphics/IndexBuffer.h"
+#include "Engine/Graphics/VertexBuffer.h"
+
+#pragma comment(lib, "d2d1.lib")
 
 namespace Grid
 {
@@ -15,18 +19,7 @@ namespace Grid
 
 // My Custom Class Header
 #include "Object/UObject.h"
-
-#pragma comment(lib, "d2d1.lib")
-
-// template <class Interface>
-// inline void SafeRelease(Interface** ppInterfaceToRelease)
-// {
-//     if (*ppInterfaceToRelease != NULL)
-//     {
-//         (*ppInterfaceToRelease)->Release();
-//         (*ppInterfaceToRelease) = NULL;
-//     }
-// }
+#include <DirectXMath.h>
 
 #ifndef Assert
 #if defined( DEBUG ) || defined( _DEBUG )

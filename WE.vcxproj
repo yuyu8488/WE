@@ -353,6 +353,11 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
     </ClCompile>
+    <ClInclude Include="Engine\Graphics\BufferBase.h" />
+    <ClInclude Include="Engine\Graphics\ConstantBuffer.h" />
+    <ClInclude Include="Engine\Graphics\IndexBuffer.h" />
+    <ClInclude Include="Engine\Graphics\VertexBuffer.h" />
+    <ClInclude Include="Engine\Utility\ComUtils.h" />
     <ClInclude Include="Framework.h" />
     <ClInclude Include="Engine\D3D11Engine.h" />
     <ClInclude Include="Object\Box.h" />
