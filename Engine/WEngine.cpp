@@ -1,5 +1,7 @@
 #include "WEngine.h"
 
+#include <d3dcompiler.h>
+
 #include "../Engine/Utility/ComUtils.h"
 #include "../Object/Box.h"
 
@@ -65,7 +67,7 @@ HRESULT WEngine::Initialize()
 			
 			RECT rc;
 			GetClientRect(WindowHandle, &rc);
-			hr = D3D11.Initialize(WindowHandle, rc.right - rc.left, rc.bottom - rc.top);
+			hr = D3d11.Initialize(WindowHandle, rc.right - rc.left, rc.bottom - rc.top);
 			if (FAILED(hr))
 			{
 				return hr;
@@ -102,7 +104,7 @@ HRESULT WEngine::CreateDeviceResources(int Width, int Height)
 
 	if (!RenderTarget)
 	{
-		IDXGISurface* BackBufferSurface = D3D11.GetBackBufferSurface();
+		IDXGISurface* BackBufferSurface = D3d11.GetBackBufferSurface();
 		if (BackBufferSurface)
 		{
 			float Dpi = static_cast<float>(GetDpiForWindow(WindowHandle));
@@ -143,7 +145,8 @@ HRESULT WEngine::OnRender()
 	
 	if (SUCCEEDED(hr))
 	{
-		D3D11.BeginRender();
+		D3d11.BeginRender();
+		
 		RenderTarget->BeginDraw();
 		RenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
 		
@@ -151,15 +154,14 @@ HRESULT WEngine::OnRender()
 		float GridWidth = RenderTarget->GetSize().width;
 		float GridHeight = RenderTarget->GetSize().height;
 		float GridSize = Grid::CellSize;
-		
+
 		for (float x = 0; x <= GridWidth; x += GridSize)
 		{
 			RenderTarget->DrawLine(
 				D2D1::Point2F(x, 0.0f),
 				D2D1::Point2F(x, GridHeight),
 				LightSlateGrayBrush,
-				.5f
-				);
+				.5f);
 		}
 		for (float y = 0; y <= GridHeight; y += GridSize)
 		{
@@ -167,10 +169,9 @@ HRESULT WEngine::OnRender()
 				D2D1::Point2F(0.0f, y),
 				D2D1::Point2F(GridWidth, y),
 				LightSlateGrayBrush,
-				.5f
-				);
+				.5f);
 		}
-		
+
 		// Draw Objects
 		if (!Objects.empty())
 		{
@@ -181,7 +182,8 @@ HRESULT WEngine::OnRender()
 		}
 		
 		hr = RenderTarget->EndDraw();
-		D3D11.EndRender();
+		
+		D3d11.EndRender();
 	}
 	
 	if (hr == D2DERR_RECREATE_TARGET)
@@ -208,39 +210,39 @@ LRESULT WEngine::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	if (message == WM_CREATE)
 	{
 		LPCREATESTRUCT pcs = (LPCREATESTRUCT)lParam;
-		WEngine* D2d = (WEngine*)pcs->lpCreateParams;
+		WEngine* Engine = (WEngine*)pcs->lpCreateParams;
 
-		SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(D2d));
+		SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(Engine));
 
 		result = 1;
 	}
 	else
 	{
-		WEngine* D2d = reinterpret_cast<WEngine*>((GetWindowLongPtrW(hWnd, GWLP_USERDATA)));
+		WEngine* Engine = reinterpret_cast<WEngine*>((GetWindowLongPtrW(hWnd, GWLP_USERDATA)));
 		bool bHandled = false;
 
-		if (D2d)
+		if (Engine)
 		{
 			switch (message)
 			{
 			case WM_KEYDOWN:
 				{
 					constexpr float MoveSpeed = 10.f;
-					if ((D2d->Objects[0] == nullptr)) break;
+					if ((Engine->Objects[0] == nullptr)) break;
 						
 					switch (wParam)
 					{
 					case 'W':
-						dynamic_cast<UBox*>(D2d->Objects[0])->Move(0, -MoveSpeed);
+						dynamic_cast<UBox*>(Engine->Objects[0])->Move(0, -MoveSpeed);
 						break;
 					case 'A':
-						dynamic_cast<UBox*>(D2d->Objects[0])->Move(-MoveSpeed, 0);
+						dynamic_cast<UBox*>(Engine->Objects[0])->Move(-MoveSpeed, 0);
 						break;
 					case 'S':
-						dynamic_cast<UBox*>(D2d->Objects[0])->Move(0, MoveSpeed);
+						dynamic_cast<UBox*>(Engine->Objects[0])->Move(0, MoveSpeed);
 						break;
 					case 'D':
-						dynamic_cast<UBox*>(D2d->Objects[0])->Move(MoveSpeed, 0);
+						dynamic_cast<UBox*>(Engine->Objects[0])->Move(MoveSpeed, 0);
 						break;						
 					}
 					InvalidateRect(hWnd, nullptr, FALSE);
@@ -250,7 +252,7 @@ LRESULT WEngine::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				{
 					UINT width = LOWORD(lParam);
 					UINT height = HIWORD(lParam);
-					D2d->OnResize(width, height);
+					Engine->OnResize(width, height);
 				}
 				result = 0;
 				bHandled = true;
@@ -264,7 +266,7 @@ LRESULT WEngine::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			case WM_PAINT:
 				{
-					D2d->OnRender();
+					Engine->OnRender();
 					ValidateRect(hWnd, nullptr);
 				}
 				result = 0;

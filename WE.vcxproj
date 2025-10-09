@@ -199,6 +199,16 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
     </ClCompile>
+    <FxCompile Include="Engine\Graphics\Shaders\VertexShader.hlsl">
+      <ShaderModel>5.0</ShaderModel>
+      <EntryPointName>VS</EntryPointName>
+      <ShaderType>Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Engine\Graphics\Shaders\PixelShader.hlsl">
+      <ShaderModel>5.0</ShaderModel>
+      <EntryPointName>PS</EntryPointName>
+      <ShaderType>Pixel</ShaderType>
+    </FxCompile>
     <ClCompile Include="Engine\WEngine.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>

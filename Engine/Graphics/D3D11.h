@@ -14,6 +14,7 @@ public:
     ~D3D11();
 
     HRESULT Initialize(HWND WindowHandle, int Width, int Height);
+    HRESULT CompileShaderFromFile(const WCHAR* FileName, LPCSTR EntryPoint, LPCSTR ShaderModel, ID3DBlob** BlobOut);
     
     void Cleanup();
 

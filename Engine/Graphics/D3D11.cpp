@@ -1,6 +1,21 @@
-﻿#include "D3D11.h"
+#include "D3D11.h"
+
+#include <d3dcompiler.h>
 
 #include "../Utility/ComUtils.h"
+#include <DirectXMath.h>
+
+#include "Buffers/VertexBuffer.h"
+
+struct SimpleVertex
+{
+    DirectX::XMFLOAT3 Position;
+};
+
+//Global Variables
+ID3D11VertexShader* VertexShader = nullptr;
+ID3D11PixelShader* PixelShader = nullptr;
+ID3D11InputLayout* VertexLayout = nullptr;
 
 D3D11::D3D11()
 {
@@ -29,15 +44,36 @@ HRESULT D3D11::Initialize(HWND WindowHandle, int Width, int Height)
     SwapChainDesc.SampleDesc.Count = 1;
     SwapChainDesc.SampleDesc.Quality = 0;
     SwapChainDesc.Windowed = TRUE;
+    
 
-    IDXGIFactory1* Factory = nullptr;
-    ResultHandle = CreateDXGIFactory1(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&Factory));
+    /*IDXGIFactory1* DxgiFactory = nullptr;
+    {
+        IDXGIDevice* DxgiDevice = nullptr;
+        ResultHandle = D3DDevice->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&DxgiDevice));
+        if (SUCCEEDED(ResultHandle))
+        {
+            IDXGIAdapter* DxgiAdapter = nullptr;
+            ResultHandle = DxgiDevice->GetAdapter(&DxgiAdapter);
+            if (SUCCEEDED(ResultHandle))
+            {
+                ResultHandle = DxgiAdapter->GetParent(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&DxgiFactory));
+                DxgiAdapter->Release();
+            }
+            DxgiDevice->Release();
+        }
+        if (FAILED(ResultHandle))
+        {
+            return ResultHandle;
+        }
+    }*/
+    IDXGIFactory1* DxgiFactory = nullptr;
+    ResultHandle = CreateDXGIFactory1(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&DxgiFactory));
     if (FAILED(ResultHandle))
     {
         return ResultHandle;
     }
     IDXGIAdapter1* Adapter = nullptr;
-    ResultHandle = Factory->EnumAdapters1(0, &Adapter);
+    ResultHandle = DxgiFactory->EnumAdapters1(0, &Adapter);
     if (FAILED(ResultHandle))
     {
         return ResultHandle;
@@ -110,7 +146,104 @@ HRESULT D3D11::Initialize(HWND WindowHandle, int Width, int Height)
     Viewport.TopLeftY = 0.0f;
     D3DDeviceContext->RSSetViewports(1, &Viewport);
 
+    // Compile vertex shader
+    ID3DBlob* VertexShaderBlob = nullptr;
+    ResultHandle = CompileShaderFromFile(L"Engine/Graphics/Shaders/VertexShader.hlsl", "VS", "vs_5_0", &VertexShaderBlob);
+    if (FAILED(ResultHandle))
+    {
+        MessageBox( nullptr,
+             L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK );
+        return ResultHandle;
+    }
+
+    // Create vertex shader
+    ResultHandle = D3DDevice->CreateVertexShader(VertexShaderBlob->GetBufferPointer(), VertexShaderBlob->GetBufferSize(), nullptr, &VertexShader);
+    if (FAILED(ResultHandle))
+    {
+        VertexShaderBlob->Release();
+        return ResultHandle;
+    }
+
+    // Define input layout
+    D3D11_INPUT_ELEMENT_DESC Layout[] =
+    {
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA,0},   
+    };
+    UINT NumElements = ARRAYSIZE(Layout);
+
+    // Create input layout
+    ResultHandle = D3DDevice->CreateInputLayout(Layout, NumElements, VertexShaderBlob->GetBufferPointer(), VertexShaderBlob->GetBufferSize(), &VertexLayout);
+    VertexShaderBlob->Release();
+    if (FAILED(ResultHandle)) return ResultHandle;
+
+    // Set Input layout
+    D3DDeviceContext->IASetInputLayout(VertexLayout);
+
+    // Compile pixel shader
+    ID3DBlob* PixelShaderBlob = nullptr;
+    ResultHandle = CompileShaderFromFile(L"Engine/Graphics/Shaders/PixelShader.hlsl", "PS", "ps_5_0", &PixelShaderBlob);
+    if (FAILED(ResultHandle))
+    {
+        MessageBox( nullptr,
+            L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK );
+        return ResultHandle;
+    }
+
+    // Create pixel shader
+    ResultHandle = D3DDevice->CreatePixelShader(PixelShaderBlob->GetBufferPointer(), PixelShaderBlob->GetBufferSize(), nullptr, &PixelShader);
+    PixelShaderBlob->Release();
+    if (FAILED(ResultHandle)) return ResultHandle;
+
+    //Create vertex buffer
+    SimpleVertex vertices[] =
+    {
+        DirectX::XMFLOAT3( 0.0f, 0.5f, 0.5f ),
+        DirectX::XMFLOAT3( 0.5f, -0.5f, 0.5f ),
+        DirectX::XMFLOAT3( -0.5f, -0.5f, 0.5f ),
+    };
+
+    VertexBuffer<SimpleVertex>* SimpleVertexBuffer = nullptr;
+    SimpleVertexBuffer = new VertexBuffer<SimpleVertex>();
+    SimpleVertexBuffer->Initialize(D3DDevice, vertices, ARRAYSIZE(vertices));
+    SimpleVertexBuffer->Bind(D3DDeviceContext);
+    D3DDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    
     return S_OK;
+}
+
+HRESULT D3D11::CompileShaderFromFile(const WCHAR* FileName, LPCSTR EntryPoint, LPCSTR ShaderModel, ID3DBlob** BlobOut)
+{
+    HRESULT ResultHandle = S_OK;
+    DWORD ShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+
+#ifdef _DEBUG
+    // Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
+    // Setting this flag improves the shader debugging experience, but still allows 
+    // the shaders to be optimized and to run exactly the way they will run in 
+    // the release configuration of this program.
+    ShaderFlags |= D3DCOMPILE_DEBUG;
+
+    // Disable optimizations to further improve shader debugging
+    ShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+
+    ID3DBlob* ErrorBlob = nullptr;
+    ResultHandle = D3DCompileFromFile(FileName, nullptr, nullptr, EntryPoint, ShaderModel,
+        ShaderFlags, 0, BlobOut, &ErrorBlob);
+    if (FAILED(ResultHandle))
+    {
+        if (ErrorBlob)
+        {
+            OutputDebugStringA(reinterpret_cast<const char*>(ErrorBlob->GetBufferPointer()));
+            ErrorBlob->Release();
+        }
+        return ResultHandle;
+    }
+    if (ErrorBlob)
+    {
+        ErrorBlob->Release();
+    }
+    return S_OK;	
 }
 
 void D3D11::Cleanup()
@@ -127,6 +260,12 @@ void D3D11::BeginRender()
 {
     float color[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
     D3DDeviceContext->ClearRenderTargetView(RenderTargetView, color);
+
+    D3DDeviceContext->VSSetShader(VertexShader, nullptr, 0);
+    D3DDeviceContext->PSSetShader(PixelShader, nullptr, 0);
+    D3DDeviceContext->Draw(3, 0);
+    
+    
     D3DDeviceContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 

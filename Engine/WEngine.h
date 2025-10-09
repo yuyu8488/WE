@@ -53,17 +53,15 @@ public:
 private:
     HRESULT CreateDeviceIndependentResources();
     HRESULT CreateDeviceResources(int Width, int Height);
- 
     void DiscardDeviceResources();
 	
     HRESULT OnRender();
     void OnResize(UINT width, UINT height);
 
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-
-    D3D11 D3D11;
     
-    HWND WindowHandle = nullptr;
+    D3D11 D3d11;
+    HWND WindowHandle;
     ID2D1Factory* D2DFactory = nullptr;
     ID2D1RenderTarget* RenderTarget = nullptr;
     ID2D1SolidColorBrush* LightSlateGrayBrush = nullptr;

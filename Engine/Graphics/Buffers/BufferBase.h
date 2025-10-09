@@ -18,6 +18,9 @@ public:
     {
         SafeRelease(&Buffer);
     }
+
+    ID3D11Buffer* GetBuffer() const {return Buffer;}
+    ID3D11Buffer** GetBufferAddress() {return &Buffer;}
     
 protected:
     ID3D11Buffer* Buffer = nullptr;
