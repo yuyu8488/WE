@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Framework.h"
+#include "./Engine/WEngine.h"
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
@@ -8,12 +8,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLi
 
     if (SUCCEEDED(CoInitialize(nullptr)))
     {
-        Framework* MyFramework = nullptr;
-        MyFramework = new Framework();
+        WEngine* Engine = nullptr;
+        Engine = new WEngine();
             
-        if (SUCCEEDED(MyFramework->Initialize()))
+        if (SUCCEEDED(Engine->Initialize()))
         {                
-            MyFramework->RunMessageLoop();
+            Engine->RunMessageLoop();
         }
         
         CoUninitialize();

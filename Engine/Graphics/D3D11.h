@@ -7,11 +7,11 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
-class D3D11Engine
+class D3D11
 {
 public:
-    D3D11Engine();
-    ~D3D11Engine();
+    D3D11();
+    ~D3D11();
 
     HRESULT Initialize(HWND WindowHandle, int Width, int Height);
     

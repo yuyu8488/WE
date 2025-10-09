@@ -1,15 +1,15 @@
-#include "Framework.h"
+#include "WEngine.h"
 
-#include "Engine/Utility/ComUtils.h"
-#include "Object/Box.h"
+#include "../Engine/Utility/ComUtils.h"
+#include "../Object/Box.h"
 
-Framework::Framework() : WindowHandle(nullptr), D2DFactory(nullptr), RenderTarget(nullptr), LightSlateGrayBrush(nullptr),CornFlowerBlueBrush(nullptr)
+WEngine::WEngine() : WindowHandle(nullptr), D2DFactory(nullptr), RenderTarget(nullptr), LightSlateGrayBrush(nullptr),CornFlowerBlueBrush(nullptr)
 {
 	UBox* PlayerBox = new UBox(10.f, 10.f, 10.f, 10.f);
 	AddObject(PlayerBox);
 }
 
-Framework::~Framework()
+WEngine::~WEngine()
 {
 	SafeRelease(&D2DFactory);
 	SafeRelease(&RenderTarget);
@@ -19,7 +19,7 @@ Framework::~Framework()
 	Objects.clear();
 }
 
-HRESULT Framework::Initialize()
+HRESULT WEngine::Initialize()
 {
 	HRESULT hr = CreateDeviceIndependentResources();
 
@@ -27,7 +27,7 @@ HRESULT Framework::Initialize()
 	{
 		WNDCLASSEX wcex = {sizeof(WNDCLASSEX)};
 		wcex.style = CS_HREDRAW | CS_VREDRAW;
-		wcex.lpfnWndProc = Framework::WndProc;
+		wcex.lpfnWndProc = WEngine::WndProc;
 		wcex.cbClsExtra = 0;
 		wcex.cbWndExtra = sizeof(LONG_PTR);
 		wcex.hInstance = HINST_THISCOMPONENT;
@@ -78,7 +78,7 @@ HRESULT Framework::Initialize()
 	return hr;
 }
 
-void Framework::RunMessageLoop()
+void WEngine::RunMessageLoop()
 {
 	MSG msg;
 
@@ -89,14 +89,14 @@ void Framework::RunMessageLoop()
 	}
 }
 
-HRESULT Framework::CreateDeviceIndependentResources()
+HRESULT WEngine::CreateDeviceIndependentResources()
 {
 	HRESULT hr = S_OK;
 	hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &D2DFactory);
 	return hr;	
 }
 
-HRESULT Framework::CreateDeviceResources(int Width, int Height)
+HRESULT WEngine::CreateDeviceResources(int Width, int Height)
 {
 	HRESULT hr = S_OK;
 
@@ -128,14 +128,14 @@ HRESULT Framework::CreateDeviceResources(int Width, int Height)
 	return hr;
 }
 
-void Framework::DiscardDeviceResources()
+void WEngine::DiscardDeviceResources()
 {
 	SafeRelease(&RenderTarget);
 	SafeRelease(&LightSlateGrayBrush);
 	SafeRelease(&CornFlowerBlueBrush);
 }
 
-HRESULT Framework::OnRender()
+HRESULT WEngine::OnRender()
 {
 	RECT rc;
 	GetClientRect(WindowHandle, &rc);
@@ -193,7 +193,7 @@ HRESULT Framework::OnRender()
 	return hr;
 }
 
-void Framework::OnResize(UINT width, UINT height)
+void WEngine::OnResize(UINT width, UINT height)
 {
 	if (RenderTarget)
 	{
@@ -201,14 +201,14 @@ void Framework::OnResize(UINT width, UINT height)
 	}
 }
 
-LRESULT Framework::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT WEngine::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT result = 0;
 
 	if (message == WM_CREATE)
 	{
 		LPCREATESTRUCT pcs = (LPCREATESTRUCT)lParam;
-		Framework* D2d = (Framework*)pcs->lpCreateParams;
+		WEngine* D2d = (WEngine*)pcs->lpCreateParams;
 
 		SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(D2d));
 
@@ -216,7 +216,7 @@ LRESULT Framework::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 	}
 	else
 	{
-		Framework* D2d = reinterpret_cast<Framework*>((GetWindowLongPtrW(hWnd, GWLP_USERDATA)));
+		WEngine* D2d = reinterpret_cast<WEngine*>((GetWindowLongPtrW(hWnd, GWLP_USERDATA)));
 		bool bHandled = false;
 
 		if (D2d)

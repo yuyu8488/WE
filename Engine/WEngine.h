@@ -6,9 +6,7 @@
 #include <vector>
 #include <wincodec.h>
 
-#include "Engine/D3D11Engine.h"
-#include "Engine/Graphics/IndexBuffer.h"
-#include "Engine/Graphics/VertexBuffer.h"
+#include "../Engine/Graphics/D3D11.h"
 
 #pragma comment(lib, "d2d1.lib")
 
@@ -18,8 +16,7 @@ namespace Grid
 }
 
 // My Custom Class Header
-#include "Object/UObject.h"
-#include <DirectXMath.h>
+#include "../Object/UObject.h"
 
 #ifndef Assert
 #if defined( DEBUG ) || defined( _DEBUG )
@@ -34,11 +31,11 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
 #endif
 
-class Framework
+class WEngine
 {
 public:
-    Framework();
-    ~Framework();
+    WEngine();
+    ~WEngine();
 
     HRESULT Initialize();
     void RunMessageLoop();
@@ -64,7 +61,7 @@ private:
 
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-    D3D11Engine D3D11;
+    D3D11 D3D11;
     
     HWND WindowHandle = nullptr;
     ID2D1Factory* D2DFactory = nullptr;
