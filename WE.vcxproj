@@ -124,7 +124,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="D3d12App.cpp" />
-    <ClCompile Include="D3D12Util.cpp" />
+    <ClCompile Include="D3d12Util.cpp" />
     <ClCompile Include="Engine\Graphics\D3D11.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -442,7 +442,7 @@
       <LinkCompiled>true</LinkCompiled>
     </ClCompile>
     <ClInclude Include="D3d12App.h" />
-    <ClInclude Include="D3D12Util.h" />
+    <ClInclude Include="D3d12Util.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="Engine\Graphics\Buffers\BufferBase.h" />
     <ClInclude Include="Engine\Graphics\Buffers\ConstantBuffer.h" />

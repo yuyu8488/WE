@@ -1,8 +1,121 @@
-#include "D3d12App.h"
+﻿#include "D3d12App.h"
+#include <WindowsX.h>
 
-#include <d3d12.h>
-#include <dxgi.h>
+using Microsoft::WRL::ComPtr;
+using namespace std;
+using namespace DirectX;
 
+D3d12App::D3d12App(HINSTANCE hInstance) : mhAppInst(hInstance)
+{
+    assert(mApp == nullptr);
+    mApp = this;
+}
+
+D3d12App::~D3d12App()
+{
+    if (mD3dDevice != nullptr)
+    {
+        FlushCommandQueue();
+    }
+}
+
+D3d12App* D3d12App::GetApp()
+{
+    return mApp;
+}
+
+HINSTANCE D3d12App::GetAppInstance() const
+{
+    return mhAppInst;
+}
+
+HWND D3d12App::GetMainWindow() const
+{
+    return mhMainWnd;
+}
+
+float D3d12App::GetAspectRatio() const
+{
+    return (float)(mClientWidth) / (float)(mClientHeight);
+}
+
+bool D3d12App::Get4xMsaaState() const
+{
+    return m4xMsaaState;
+}
+
+void D3d12App::Set4xMsaaState(bool Value)
+{
+    if (m4xMsaaState != Value)
+    {
+        m4xMsaaState = Value;
+
+        CreateSwapChain();
+        OnResize();
+    }
+}
+
+int D3d12App::Run()
+{
+    MSG Msg = {nullptr};
+
+    mTimer.Reset();
+
+    while (Msg.message != WM_QUIT)
+    {
+        if (PeekMessage(&Msg, nullptr, 0, 0, PM_REMOVE))
+        {
+            TranslateMessage(&Msg);
+            DispatchMessage(&Msg);
+        }
+        // Do animation/game stuff.
+        else
+        {
+            mTimer.Tick();
+
+            if (!mAppPaused)
+            {
+                CalculateFrameStats();
+                Update(mTimer);
+                Draw(mTimer);
+            }
+            else
+            {
+                Sleep(100);
+            }
+        }
+    }
+    return (int)Msg.wParam;
+}
+
+bool D3d12App::Initialize()
+{
+    if (!InitMainWindow())
+    {
+        return false;
+    }
+
+    if (!InitDirect3D())
+    {
+        return false;
+    }
+    
+    OnResize();
+
+    return true;
+}
+
+LRESULT D3d12App::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+}
+
+void D3d12App::Update(const GameTimer& gt)
+{
+}
+
+void D3d12App::Draw(const GameTimer& gt)
+{
+}
 
 void D3d12App::CreateRtvAndDsvDescriptorHeaps()
 {
@@ -23,6 +136,14 @@ void D3d12App::CreateRtvAndDsvDescriptorHeaps()
 
 void D3d12App::OnResize()
 {
+    assert(mD3dDevice);
+    assert(mSwapChain);
+    assert(mDirectCmdListAlloc);
+
+    FlushCommandQueue();
+
+    mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr);
+    
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(mRtvHeap->GetCPUDescriptorHandleForHeapStart());
     for (UINT i = 0; i < SwapChainBufferCount; i++)
     {
@@ -50,8 +171,10 @@ void D3d12App::OnResize()
     optClear.Format = mDepthStencilFormat;
     optClear.DepthStencil.Depth = 1.f;
     optClear.DepthStencil.Stencil = 0;
+    
+    CD3DX12_HEAP_PROPERTIES HeapProps(D3D12_HEAP_TYPE_DEFAULT);
     mD3dDevice->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+        &HeapProps,
         D3D12_HEAP_FLAG_NONE,
         &DepthStencilDesc,
         D3D12_RESOURCE_STATE_COMMON,
@@ -61,13 +184,23 @@ void D3d12App::OnResize()
     mD3dDevice->CreateDepthStencilView(
         mDepthStencilBuffer.Get(),
         nullptr,
-        DepthStencilView());
+        GetDepthStencilView());
+    
 
-    mCommandList->ResourceBarrier(1, 
-        &CD3DX12_RESOURCE_BARRIER::Transition(
-            mDepthStencilBuffer.Get(),
-            D3D12_RESOURCE_STATE_COMMON,
-            D3D12_RESOURCE_STATE_DEPTH_WRITE));
+    CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(mDepthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+    mCommandList->ResourceBarrier(1, &barrier);
+}
+
+bool D3d12App::InitMainWindow()
+{
+}
+
+void D3d12App::FlushCommandQueue()
+{
+}
+
+ID3D12Resource* D3d12App::GetCurrentBackBuffer() const
+{
 }
 
 bool D3d12App::InitDirect3D()
@@ -163,12 +296,28 @@ void D3d12App::CreateSwapChain()
     mDxgiFactory->CreateSwapChain(mCommandQueue.Get(), &SD, &mSwapChain);
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE D3d12App::CurrentBackBufferView() const
+D3D12_CPU_DESCRIPTOR_HANDLE D3d12App::GetCurrentBackBufferView() const
 {
     return CD3DX12_CPU_DESCRIPTOR_HANDLE(mRtvHeap->GetCPUDescriptorHandleForHeapStart(), mCurrBackBuffer, mRtvDescriptorSize);
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE D3d12App::DepthStencilView() const
+D3D12_CPU_DESCRIPTOR_HANDLE D3d12App::GetDepthStencilView() const
 {
     return mDsvHeap->GetCPUDescriptorHandleForHeapStart();
+}
+
+void D3d12App::CalculateFrameStats()
+{
+}
+
+void D3d12App::LogAdapters()
+{
+}
+
+void D3d12App::LogAdapterOutputs(IDXGIAdapter* Adapter)
+{
+}
+
+void D3d12App::LogOutputDisplayModes(IDXGIOutput* Output, DXGI_FORMAT Format)
+{
 }

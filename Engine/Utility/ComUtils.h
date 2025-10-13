@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <string>
 
 template <class Interface>
 inline void SafeRelease(Interface** ppInterfaceToRelease)
