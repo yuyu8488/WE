@@ -30,7 +30,13 @@
     <ClCompile Include="Object\UObject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Object\VertexTriangle.cpp">
+    <ClCompile Include="D3d12App.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GameTimer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -62,14 +68,21 @@
     <ClInclude Include="Object\UObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Object\VertexTriangle.h">
+    <ClInclude Include="D3d12App.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GameTimer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Engine\Graphics\Shaders\PixelShader.hlsl" />
-  </ItemGroup>
-  <ItemGroup>
     <FxCompile Include="Engine\Graphics\Shaders\VertexShader.hlsl" />
+    <FxCompile Include="Engine\Graphics\Shaders\PixelShader.hlsl" />
   </ItemGroup>
 </Project>
