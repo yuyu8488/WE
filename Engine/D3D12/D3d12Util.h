@@ -20,5 +20,6 @@
 #include <sstream>
 #include <cassert>
 
+
 #include "d3dx12.h"
 
