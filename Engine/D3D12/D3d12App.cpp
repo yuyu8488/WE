@@ -267,6 +267,7 @@ void D3d12App::OnResize()
     DepthStencilDesc.MipLevels = 1;
     DepthStencilDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
     DepthStencilDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
+    DepthStencilDesc.Format = mDepthStencilFormat;
     DepthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     DepthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
@@ -285,7 +286,7 @@ void D3d12App::OnResize()
         IID_PPV_ARGS(mDepthStencilBuffer.GetAddressOf()));
 
 
-    D3D12_DEPTH_STENCIL_VIEW_DESC DepthStencilViewDesc;
+    D3D12_DEPTH_STENCIL_VIEW_DESC DepthStencilViewDesc; 
     DepthStencilViewDesc.Flags = D3D12_DSV_FLAG_NONE;
     DepthStencilViewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
     DepthStencilViewDesc.Format = mDepthStencilFormat;
@@ -373,7 +374,7 @@ void D3d12App::FlushCommandQueue()
 
 ID3D12Resource* D3d12App::GetCurrentBackBuffer() const
 {
-    return NULL;
+    return mSwapChainBuffer[mCurrBackBuffer].Get();
 }
 
 bool D3d12App::InitDirect3D()
@@ -466,6 +467,7 @@ void D3d12App::CreateSwapChain()
     SD.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
     SD.SampleDesc.Count = m4xMsaaState ? 4 : 1;
     SD.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
+    SD.BufferCount = 2;
     SD.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     SD.OutputWindow = mhMainWnd;
     SD.Windowed = true;

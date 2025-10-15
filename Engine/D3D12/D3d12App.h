@@ -4,8 +4,9 @@
 #include "GameTimer.h"
 
 #pragma comment(lib,"d3dcompiler.lib")
-#pragma comment(lib, "D3D12.lib")
+#pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
+
 
 class D3d12App
 {

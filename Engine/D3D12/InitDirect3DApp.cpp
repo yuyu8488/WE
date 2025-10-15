@@ -57,13 +57,14 @@ void InitDirect3DApp::Update(const GameTimer& gt)
 
 void InitDirect3DApp::Draw(const GameTimer& gt)
 {
-	mDirectCmdListAlloc->Reset();
+	ThrowIfFailed(mDirectCmdListAlloc->Reset());
+	ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
-	mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr);
-
-	CD3DX12_RESOURCE_BARRIER Barrier = CD3DX12_RESOURCE_BARRIER::Transition(GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	auto Barrier = CD3DX12_RESOURCE_BARRIER::Transition(GetCurrentBackBuffer(), 
+		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	mCommandList->ResourceBarrier(1, &Barrier);
 
+	// Error
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
@@ -82,7 +83,7 @@ void InitDirect3DApp::Draw(const GameTimer& gt)
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
-	mSwapChain->Present(0, 0);
+	ThrowIfFailed(mSwapChain->Present(0, 0));
 	mCurrBackBuffer = (mCurrBackBuffer + 1) % SwapChainBufferCount;
 
 	FlushCommandQueue();
