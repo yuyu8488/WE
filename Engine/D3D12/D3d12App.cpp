@@ -1,6 +1,8 @@
 ﻿#include "D3d12App.h"
 #include <WindowsX.h>
 
+D3d12App* D3d12App::mApp = nullptr;
+
 using Microsoft::WRL::ComPtr;
 using namespace std;
 using namespace DirectX;
@@ -337,6 +339,7 @@ bool D3d12App::InitMainWindow()
 
     mhMainWnd = CreateWindow(L"MainWindow", mMainWndCaption.c_str(),
         WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, Width, Height, 0, 0, mhAppInst, 0);
+
     if (!mhMainWnd)
     {
         MessageBox(0, L"CreateWindow Failed", 0, 0);
@@ -353,7 +356,7 @@ void D3d12App::FlushCommandQueue()
 {
     mCurrentFence++;
 
-    mCommandQueue->Signal(mFence.Get(), mCurrentFence);
+    ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mCurrentFence));
 
     if (mFence->GetCompletedValue() < mCurrentFence)
     {
@@ -376,54 +379,59 @@ ID3D12Resource* D3d12App::GetCurrentBackBuffer() const
 bool D3d12App::InitDirect3D()
 {
 #if defined(DEBUG) || defined(_DEBUG)
-    Microsoft::WRL::ComPtr<ID3D12Debug> DebugController;
-  
-    DebugController->EnableDebugLayer();
+{
+	ComPtr<ID3D12Debug> debugController;
+	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+	debugController->EnableDebugLayer();
+}
 #endif
 
-    CreateDXGIFactory1(IID_PPV_ARGS(&mDxgiFactory));
+    ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mDxgiFactory)));
 
     HRESULT ResultHandle = D3D12CreateDevice(
         nullptr,
+        D3D_FEATURE_LEVEL_11_0,
+        IID_PPV_ARGS(&mD3dDevice));
+
+    if (FAILED(ResultHandle))
+    {
+        Microsoft::WRL::ComPtr<IDXGIAdapter> WarpAdapter;
+        ThrowIfFailed(mDxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&WarpAdapter)));
+    
+        D3D12CreateDevice(
+            WarpAdapter.Get(),
             D3D_FEATURE_LEVEL_11_0,
             IID_PPV_ARGS(&mD3dDevice));
+    }
+    
+    ThrowIfFailed(mD3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
+    
+    mDsvDescriptorSize = mD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+    mRtvDescriptorSize = mD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    mCbvSrvUavDescriptorSize = mD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    
+    D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS QualityLevels;
+    QualityLevels.Format = mBackBufferFormat;
+    QualityLevels.SampleCount = 4;
+    QualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+    QualityLevels.NumQualityLevels = 0;
+    ThrowIfFailed(mD3dDevice->CheckFeatureSupport(
+        D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
+        &QualityLevels,
+        sizeof(QualityLevels)));
+    
+    m4xMsaaQuality = QualityLevels.NumQualityLevels;
+    assert(m4xMsaaQuality > 0 && "Unexpected MSAA quality level");
+    
+#ifdef _DEBUG
+    LogAdapters();
+#endif
 
-            if (FAILED(ResultHandle))
-            {
-                Microsoft::WRL::ComPtr<IDXGIAdapter> WarpAdapter;
-                mDxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&WarpAdapter));
-
-                D3D12CreateDevice(
-                    WarpAdapter.Get(),
-                    D3D_FEATURE_LEVEL_11_0,
-                    IID_PPV_ARGS(&mD3dDevice));
-            }
-
-            mD3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence));
-
-            mDsvDescriptorSize = mD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-            mRtvDescriptorSize = mD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-            mCbvSrvUavDescriptorSize = mD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-            D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS QualityLevels;
-            QualityLevels.Format = mBackBufferFormat;
-            QualityLevels.SampleCount = 4;
-            QualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
-            QualityLevels.NumQualityLevels = 0;
-            mD3dDevice->CheckFeatureSupport(
-                D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
-                &QualityLevels,
-                sizeof(QualityLevels));
-
-            m4xMsaaQuality = QualityLevels.NumQualityLevels;
-            assert(m4xMsaaQuality > 0 && "Unexpected MSAA quality level");
-
-
-            CreateCommandObjects();
-            CreateSwapChain();
-            CreateRtvAndDsvDescriptorHeaps();
-
-            return true;
+    CreateCommandObjects();
+    CreateSwapChain();
+    CreateRtvAndDsvDescriptorHeaps();
+    
+    return true;
 }
 
 void D3d12App::CreateCommandObjects()
@@ -431,15 +439,15 @@ void D3d12App::CreateCommandObjects()
     D3D12_COMMAND_QUEUE_DESC QueueDesc = {};
     QueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
     QueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-
-    mD3dDevice->CreateCommandQueue(&QueueDesc, IID_PPV_ARGS(&mCommandQueue));
-    mD3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(mDirectCmdListAlloc.GetAddressOf()));
-    mD3dDevice->CreateCommandList(
+    ThrowIfFailed(mD3dDevice->CreateCommandQueue(&QueueDesc, IID_PPV_ARGS(&mCommandQueue)));
+   
+    ThrowIfFailed(mD3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(mDirectCmdListAlloc.GetAddressOf())));
+    ThrowIfFailed(mD3dDevice->CreateCommandList(
         0,
         D3D12_COMMAND_LIST_TYPE_DIRECT,
         mDirectCmdListAlloc.Get(),
         nullptr,
-        IID_PPV_ARGS(mCommandList.GetAddressOf()));
+        IID_PPV_ARGS(mCommandList.GetAddressOf())));
 
     mCommandList->Close();
 }
@@ -452,6 +460,7 @@ void D3d12App::CreateSwapChain()
     SD.BufferDesc.Width = mClientWidth;
     SD.BufferDesc.Height = mClientHeight;
     SD.BufferDesc.RefreshRate.Numerator = 60;
+    SD.BufferDesc.RefreshRate.Denominator = 1;
     SD.BufferDesc.Format = mBackBufferFormat;
     SD.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
     SD.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
@@ -463,7 +472,7 @@ void D3d12App::CreateSwapChain()
     SD.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     SD.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
-    mDxgiFactory->CreateSwapChain(mCommandQueue.Get(), &SD, &mSwapChain);
+    ThrowIfFailed(mDxgiFactory->CreateSwapChain(mCommandQueue.Get(), &SD, mSwapChain.GetAddressOf()));
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3d12App::GetCurrentBackBufferView() const
@@ -501,6 +510,30 @@ void D3d12App::CalculateFrameStats()
 
 void D3d12App::LogAdapters()
 {
+    UINT i = 0;
+    IDXGIAdapter* Adapter = nullptr;
+    std::vector<IDXGIAdapter*> AdapterList;
+    while (mDxgiFactory->EnumAdapters(i, &Adapter) != DXGI_ERROR_NOT_FOUND)
+    {
+        DXGI_ADAPTER_DESC Desc;
+        Adapter->GetDesc(&Desc);
+
+        std::wstring Text = L"***Adapter: ";
+        Text += Desc.Description;
+        Text += L"\n";
+
+        OutputDebugString(Text.c_str());
+
+        AdapterList.push_back(Adapter);
+
+        ++i;
+    }
+
+    for (size_t i = 0; i < AdapterList.size(); i++)
+    {
+        LogAdapterOutputs(AdapterList[i]);
+        ReleaseCom(AdapterList[i]);
+    }
 }
 
 void D3d12App::LogAdapterOutputs(IDXGIAdapter* Adapter)

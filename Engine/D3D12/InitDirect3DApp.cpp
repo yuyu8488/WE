@@ -67,10 +67,12 @@ void InitDirect3DApp::Draw(const GameTimer& gt)
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
-	mCommandList->ClearRenderTargetView(GetCurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
+	auto BackBufferView = GetCurrentBackBufferView();
+	mCommandList->ClearRenderTargetView(BackBufferView, DirectX::Colors::LightSteelBlue, 0, nullptr);
 
-	mCommandList->ClearDepthStencilView(GetDepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
-	mCommandList->OMSetRenderTargets(1, &GetCurrentBackBufferView(), true, &GetDepthStencilView());
+	auto DepthStencilView = GetDepthStencilView();
+	mCommandList->ClearDepthStencilView(DepthStencilView, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
+	mCommandList->OMSetRenderTargets(1, &BackBufferView, true, &DepthStencilView);
 
 	Barrier = CD3DX12_RESOURCE_BARRIER::Transition(GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	mCommandList->ResourceBarrier(1, &Barrier);

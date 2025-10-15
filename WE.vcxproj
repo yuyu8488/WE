@@ -132,6 +132,11 @@
     <ClInclude Include="Engine\D3D12\d3dx12.h" />
     <ClInclude Include="Engine\D3D12\GameTimer.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitattributes" />
+    <None Include=".gitignore" />
+    <None Include="README.md" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
