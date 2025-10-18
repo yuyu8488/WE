@@ -1,4 +1,4 @@
-#include "D3d12Util.h"
+#include "D3D12Util.h"
 #include <comdef.h>
 
 DxException::DxException(HRESULT hr, const std::wstring& functionName, const std::wstring& filename, int lineNumber) :

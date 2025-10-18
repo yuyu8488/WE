@@ -30,6 +30,36 @@ inline std::wstring AnsiToWString(const std::string& str)
 	return std::wstring(buffer);
 }
 
+class D3DUtil
+{
+public:
+	static bool IsKeyDown(int vKeyCode);
+	static std::string ToString(HRESULT hr);
+
+	static UINT CalcConstantBufferByteSize(UINT byteSize)
+	{
+		// GPU는 상수 버퍼를 읽을때 최소 단위가 256byte.
+		// 300바이트가 필요해도 512바이트를 할당해야함.
+		// ex) (300 + 255) & ~255 >> 00000000 00000010 00100011 & 11111111 11111111 11111111 00000000
+		// 00000000 00000010 00000000 = 512
+		return (byteSize + 255) & ~255;
+	}
+
+	static Microsoft::WRL::ComPtr<ID3DBlob> LoadBinary(const std::wstring& filename);
+	static Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
+		ID3D12Device* device,
+		ID3D12GraphicsCommandList* cmdList,
+		const void* initData,
+		UINT64 byteSize,
+		Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer);
+
+	static Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(
+		const std::wstring& filename,
+		const D3D_SHADER_MACRO* defines,
+		const std::string& entrypoint,
+		const std::string& target);
+};
+
 class DxException
 {
 public:

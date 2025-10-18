@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "D3d12Util.h"
+#include "D3D12Util.h"
 #include "GameTimer.h"
 
 #pragma comment(lib,"d3dcompiler.lib")
@@ -8,16 +8,16 @@
 #pragma comment(lib, "dxgi.lib")
 
 
-class D3d12App
+class D3D12
 {
 protected:
-	D3d12App(HINSTANCE hInstance);
-	D3d12App(const D3d12App& rhs) = delete;
-	D3d12App& operator=(const D3d12App& rhs) = delete;
-	virtual ~D3d12App();
+	D3D12(HINSTANCE hInstance);
+	D3D12(const D3D12& rhs) = delete;
+	D3D12& operator=(const D3D12& rhs) = delete;
+	virtual ~D3D12();
 
 public:
-	static D3d12App* GetApp();
+	static D3D12* GetApp();
 
 	HINSTANCE GetAppInstance() const;
 	HWND GetMainWindow() const;
@@ -61,7 +61,7 @@ protected:
 	//***************************************************************************************
 	// Member variables
 	//***************************************************************************************
-	static D3d12App* mApp;
+	static D3D12* mApp;
 
 	HINSTANCE mhAppInst = nullptr;
 	HWND mhMainWnd = nullptr;

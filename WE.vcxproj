@@ -123,12 +123,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Engine\D3D12\D3d12App.cpp" />
-    <ClCompile Include="Engine\D3D12\D3d12Util.cpp" />
-    <ClCompile Include="Engine\D3D12\InitDirect3DApp.cpp" />
+    <ClCompile Include="Box\Box.cpp" />
+    <ClCompile Include="Engine\Common\MathHelper.cpp" />
+    <ClCompile Include="Engine\D3D12\D3D12.cpp" />
+    <ClCompile Include="Engine\D3D12\D3D12Util.cpp" />
     <ClCompile Include="Engine\D3D12\GameTimer.cpp" />
-    <ClInclude Include="Engine\D3D12\D3d12App.h" />
-    <ClInclude Include="Engine\D3D12\D3d12Util.h" />
+    <ClInclude Include="Box\Box.h" />
+    <ClInclude Include="Engine\Common\MathHelper.h" />
+    <ClInclude Include="Engine\Common\UploadBuffer.h" />
+    <ClInclude Include="Engine\D3D12\D3D12.h" />
+    <ClInclude Include="Engine\D3D12\D3D12Util.h" />
     <ClInclude Include="Engine\D3D12\d3dx12.h" />
     <ClInclude Include="Engine\D3D12\GameTimer.h" />
   </ItemGroup>
