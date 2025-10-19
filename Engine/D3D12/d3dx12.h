@@ -10,7 +10,7 @@
 #ifndef __D3DX12_H__
 #define __D3DX12_H__
 
-#include "d3d12.h"
+#include "D3D12App.h"
 
 #if defined( __cplusplus )
 

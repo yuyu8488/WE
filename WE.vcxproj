@@ -125,13 +125,14 @@
   <ItemGroup>
     <ClCompile Include="Box\Box.cpp" />
     <ClCompile Include="Engine\Common\MathHelper.cpp" />
-    <ClCompile Include="Engine\D3D12\D3D12.cpp" />
+    <ClCompile Include="Engine\D3D12\D3D12App.cpp" />
     <ClCompile Include="Engine\D3D12\D3D12Util.cpp" />
     <ClCompile Include="Engine\D3D12\GameTimer.cpp" />
+    <ClCompile Include="Engine\WE.cpp" />
     <ClInclude Include="Box\Box.h" />
     <ClInclude Include="Engine\Common\MathHelper.h" />
     <ClInclude Include="Engine\Common\UploadBuffer.h" />
-    <ClInclude Include="Engine\D3D12\D3D12.h" />
+    <ClInclude Include="Engine\D3D12\D3D12App.h" />
     <ClInclude Include="Engine\D3D12\D3D12Util.h" />
     <ClInclude Include="Engine\D3D12\d3dx12.h" />
     <ClInclude Include="Engine\D3D12\GameTimer.h" />
@@ -140,6 +141,13 @@
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
     <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Shaders\color.hlsl">
+      <FileType>Document</FileType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

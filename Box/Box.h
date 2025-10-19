@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "../Engine/D3D12/D3D12.h"
+#include "../Engine/D3D12/D3D12App.h"
 #include "../Engine/Common/MathHelper.h"
 #include "../Engine/Common/UploadBuffer.h"
 
@@ -15,7 +15,7 @@ struct ObjectConstants
     DirectX::XMFLOAT4X4 WorldViewProjection = MathHelper::Identity4x4();
 };
 
-class Box : public D3D12
+class Box : public D3D12App
 {
 public:
     Box(HINSTANCE hInstance);
@@ -44,5 +44,21 @@ private:
     std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
 
     std::unique_ptr<MeshGeometry> mBoxGeo = nullptr;
-    
+
+    Microsoft::WRL::ComPtr<ID3DBlob> mvsByteCode = nullptr;
+    Microsoft::WRL::ComPtr<ID3DBlob> mpsByteCode = nullptr;
+
+    std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
+
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> mPSO = nullptr;
+
+    DirectX::XMFLOAT4X4 mWorld = MathHelper::Identity4x4();
+    DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
+    DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
+
+    float mTheta = 1.5f * DirectX::XM_PI;
+    float mPhi = DirectX::XM_PIDIV4;
+    float mRadius = 5.f;
+
+    POINT mLastMousePos;    
 };

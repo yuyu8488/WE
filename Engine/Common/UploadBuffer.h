@@ -17,7 +17,7 @@ public:
         }
 
         CD3DX12_HEAP_PROPERTIES HeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-        CD3DX12_RESOURCE_DESC Desc = CD3DX12_RESOURCE_DESC::Buffer(mElementByteSize*elementCount)
+        CD3DX12_RESOURCE_DESC Desc = CD3DX12_RESOURCE_DESC::Buffer(mElementByteSize*elementCount);
         ThrowIfFailed(device->CreateCommittedResource(
             &HeapProperties,
             D3D12_HEAP_FLAG_NONE,

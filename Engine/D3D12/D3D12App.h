@@ -8,16 +8,16 @@
 #pragma comment(lib, "dxgi.lib")
 
 
-class D3D12
+class D3D12App
 {
 protected:
-	D3D12(HINSTANCE hInstance);
-	D3D12(const D3D12& rhs) = delete;
-	D3D12& operator=(const D3D12& rhs) = delete;
-	virtual ~D3D12();
+	D3D12App(HINSTANCE hInstance);
+	D3D12App(const D3D12App& rhs) = delete;
+	D3D12App& operator=(const D3D12App& rhs) = delete;
+	virtual ~D3D12App();
 
 public:
-	static D3D12* GetApp();
+	static D3D12App* GetApp();
 
 	HINSTANCE GetAppInstance() const;
 	HWND GetMainWindow() const;
@@ -61,7 +61,7 @@ protected:
 	//***************************************************************************************
 	// Member variables
 	//***************************************************************************************
-	static D3D12* mApp;
+	static D3D12App* mApp;
 
 	HINSTANCE mhAppInst = nullptr;
 	HWND mhMainWnd = nullptr;

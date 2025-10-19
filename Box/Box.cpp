@@ -1,1 +1,245 @@
 ﻿#include "Box.h"
+
+Box::Box(HINSTANCE hInstance) : D3D12App(hInstance), mLastMousePos()
+{
+}
+
+Box::~Box()
+{
+}
+
+bool Box::Initialize()
+{
+    if (!D3D12App::Initialize())
+    {
+        return false;
+    }
+
+    // 초기화 명령들을 준비하기 위해 명령 목록을 재설정.
+    ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
+
+    BuildDescriptorHeaps();
+    BuildRootSignature();
+    BuildRootSignature();
+    BuildShadersAndInputLayout();
+    BuildBoxGeometry();
+    BuildPSO();
+
+    // 초기화 명령 실행.
+    ThrowIfFailed(mCommandList->Close());
+    ID3D12CommandList* cmdsList[] = {mCommandList.Get()};
+    mCommandQueue->ExecuteCommandLists(_countof(cmdsList), cmdsList);
+
+    FlushCommandQueue();
+
+    return true;    
+}
+
+void Box::OnResize()
+{
+    D3D12App::OnResize();
+
+    DirectX::XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(0.25f * DirectX::XM_PI, GetAspectRatio(), 1.f, 1000.f);
+    DirectX::XMStoreFloat4x4(&mProj, P);
+}
+
+void Box::Update(const GameTimer& gt)
+{
+    // 구면 좌표를 직교좌표(데카르트좌표)로 변환
+    float X = mRadius*sinf(mPhi)*cosf(mTheta);
+    float Z = mRadius*sinf(mPhi)*sinf(mTheta);
+    float Y = mRadius*cosf(mPhi);
+
+    // 시야 행렬 
+    DirectX::XMVECTOR Pos = DirectX::XMVectorSet(X,Y,Z,1.f);
+    DirectX::XMVECTOR Target = DirectX::XMVectorZero();
+    DirectX::XMVECTOR Up = DirectX::XMVectorSet(0.f,1.f,0.f,0.f);
+    DirectX::XMMATRIX View = DirectX::XMMatrixLookAtLH(Pos, Target, Up);
+    DirectX::XMStoreFloat4x4(&mView, View);
+    
+    DirectX::XMMATRIX World = XMLoadFloat4x4(&mWorld);
+    DirectX::XMMATRIX Proj = DirectX::XMLoadFloat4x4(&mProj);
+
+    DirectX::XMMATRIX WorldViewProjection = World * Proj * View;
+
+    // Update constant buffer
+    ObjectConstants ObjConstants;
+    DirectX::XMStoreFloat4x4(&ObjConstants.WorldViewProjection, DirectX::XMMatrixTranspose(WorldViewProjection));
+    mObjectCB->CopyData(0, ObjConstants);    
+}
+
+void Box::Draw(const GameTimer& gt)
+{
+    // 명령 기록에 관련된 메모리의 재활용을 위해 명령 할당자를 재설정.
+    // 재설정은 GPU가 관련 명령 목록들을 모두 처리한 후에 일어남.
+    ThrowIfFailed(mDirectCmdListAlloc->Reset());
+
+    // 명령 목록을 ExecuteCommandList를 통해서 명령대기열에 추가했다면 명령 목록 재설정 가능.
+    // 명령 목록을 재설정하면 메모리가 재활용됨.
+    ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), mPSO.Get()));
+
+    mCommandList->RSSetViewports(1, &mScreenViewport);
+    mCommandList->RSSetScissorRects(1, &mScissorRect);
+
+    // 자원 용도에 관련된 상태 전이를 Direct3D에 통지.
+    CD3DX12_RESOURCE_BARRIER rb = CD3DX12_RESOURCE_BARRIER::Transition(
+        GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    mCommandList->ResourceBarrier(1, &rb);
+
+    mCommandList->ClearRenderTargetView(GetCurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
+    mCommandList->ClearDepthStencilView(GetDepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
+
+    // 렌더링 결과가 기록될 렌더 대상 버퍼들을 지정.
+    D3D12_CPU_DESCRIPTOR_HANDLE BackBufferView = GetCurrentBackBufferView();
+    D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView = GetDepthStencilView();
+    mCommandList->OMSetRenderTargets(1, &BackBufferView, true,  &DepthStencilView);
+
+    ID3D12DescriptorHeap* DescriptorHeaps[] = {mCbvHeap.Get()};
+    mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+
+    D3D12_VERTEX_BUFFER_VIEW Vbv = mBoxGeo->VertexBufferView();
+    mCommandList->IASetVertexBuffers(0, 1, &Vbv);
+    D3D12_INDEX_BUFFER_VIEW Ibv = mBoxGeo->IndexBufferView();
+    mCommandList->IASetIndexBuffer(&Ibv);
+    mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+
+    mCommandList->DrawIndexedInstanced(mBoxGeo->DrawArgs["box"].IndexCount, 1,0,0,0);
+
+    rb = CD3DX12_RESOURCE_BARRIER::Transition(
+    GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+    mCommandList->ResourceBarrier(1, &rb);
+    
+    ThrowIfFailed(mCommandList->Close());
+
+    // 명령 실행을 위해 명령 목록을 명령 대기열에 추가
+    ID3D12CommandList* cmdsLists[] = {mCommandList.Get()};
+    mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+    // 후면 버퍼와 전면 버퍼 교환
+    ThrowIfFailed(mSwapChain->Present(0, 0));
+    mCurrBackBuffer = (mCurrBackBuffer + 1) % SwapChainBufferCount;
+
+    // Box 예제에서는 간단함을 위해 프레임 명령들이 모두 처리되길 기다림(비효율적)
+    FlushCommandQueue();
+}
+
+void Box::BuildDescriptorHeaps()
+{
+    D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc ={};
+    cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    cbvHeapDesc.NodeMask = 0;
+    cbvHeapDesc.NumDescriptors = 1;
+    ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
+}
+
+void Box::BuildConstantBuffers()
+{
+    mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(mD3dDevice.Get(), 1, true);
+    UINT ObjCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+
+    D3D12_GPU_VIRTUAL_ADDRESS cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
+    int noxCBufIndex = 0;
+    cbAddress += noxCBufIndex * ObjCBByteSize;
+
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+    cbvDesc.BufferLocation = cbAddress;
+    cbvDesc.SizeInBytes = D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+
+    mD3dDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart());    
+}
+
+void Box::BuildRootSignature()
+{
+    CD3DX12_ROOT_PARAMETER slotRootParameter[1];
+    CD3DX12_DESCRIPTOR_RANGE cbvTable;
+    cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV,1,0);
+    slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable);
+
+    CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(1, slotRootParameter, 0, nullptr,
+        D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+    // 상수 버퍼 하나로 구성된 서술자 구간을 가리키는 슬롯하나로 이루어진 루트서명을 생성.
+    Microsoft::WRL::ComPtr<ID3DBlob> serializeRootSignature = nullptr;
+    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+    HRESULT hr = D3D12SerializeRootSignature(
+        &rootSigDesc,
+        D3D_ROOT_SIGNATURE_VERSION_1,
+        serializeRootSignature.GetAddressOf(),
+        errorBlob.GetAddressOf());
+
+    if (errorBlob)
+    {
+        OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+    }
+    ThrowIfFailed(hr);
+
+    ThrowIfFailed(mD3dDevice->CreateRootSignature(
+        0,
+        serializeRootSignature->GetBufferPointer(),
+        serializeRootSignature->GetBufferSize(),
+        IID_PPV_ARGS(&mRootSignature)));
+}
+
+void Box::BuildShadersAndInputLayout()
+{
+    HRESULT hr = S_OK;
+    
+    mvsByteCode = D3DUtil::CompileShader(L"../Shaders/color.hlsl", nullptr, "VS", "vs_5_0");
+    mvsByteCode = D3DUtil::CompileShader(L"../Shaders/color.hlsl", nullptr, "PS", "ps_5_0");
+
+    mInputLayout =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+    };
+}
+
+void Box::BuildBoxGeometry()
+{
+    std::array<Vertex, 8> vertices =
+    {
+        Vertex({ DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::White) }),
+        Vertex({ DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::Black) }),
+        Vertex({ DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) }),
+        Vertex({ DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::Green) }),
+        Vertex({ DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Blue) }),
+        Vertex({ DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Yellow) }),
+        Vertex({ DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Cyan) }),
+        Vertex({ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Magenta) })
+    };
+
+    std::array<std::uint16_t, 36> indices =
+    {
+        // front face
+        0, 1, 2,
+        0, 2, 3,
+
+        // back face
+        4, 6, 5,
+        4, 7, 6,
+
+        // left face
+        4, 5, 1,
+        4, 1, 0,
+
+        // right face
+        3, 2, 6,
+        3, 6, 7,
+
+        // top face
+        1, 5, 6,
+        1, 6, 2,
+
+        // bottom face
+        4, 0, 3,
+        4, 3, 7
+    };
+}
+
+void Box::BuildPSO()
+{
+
+}
