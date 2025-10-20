@@ -187,8 +187,8 @@ void Box::BuildShadersAndInputLayout()
 {
     HRESULT hr = S_OK;
     
-    mvsByteCode = D3DUtil::CompileShader(L"../Shaders/color.hlsl", nullptr, "VS", "vs_5_0");
-    mvsByteCode = D3DUtil::CompileShader(L"../Shaders/color.hlsl", nullptr, "PS", "ps_5_0");
+    mvsByteCode = D3DUtil::CompileShader(L"Shaders/color.hlsl", nullptr, "VS", "vs_5_0");
+    mvsByteCode = D3DUtil::CompileShader(L"Shaders/color.hlsl", nullptr, "PS", "ps_5_0");
 
     mInputLayout =
     {
@@ -237,9 +237,67 @@ void Box::BuildBoxGeometry()
         4, 0, 3,
         4, 3, 7
     };
+
+    const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+    const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+    mBoxGeo = std::make_unique<MeshGeometry>();
+    mBoxGeo->Name = "boxGeo";
+
+    ThrowIfFailed(D3DCreateBlob(vbByteSize, &mBoxGeo->VertexBufferCPU));
+    CopyMemory(mBoxGeo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+    ThrowIfFailed(D3DCreateBlob(ibByteSize, &mBoxGeo->IndexBufferCPU));
+    CopyMemory(mBoxGeo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+    mBoxGeo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(
+        mD3dDevice.Get(), mCommandList.Get(),
+        vertices.data(), vbByteSize,
+        mBoxGeo->VertexBufferUploader);
+
+    mBoxGeo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(
+        mD3dDevice.Get(), mCommandList.Get(),
+        indices.data(), ibByteSize,
+        mBoxGeo->IndexBufferUploader);
+
+    mBoxGeo->VertexByteStride = sizeof(Vertex);
+    mBoxGeo->VertexBufferByteSize = vbByteSize;
+    mBoxGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
+    mBoxGeo->IndexBufferByteSize = ibByteSize;
+
+    SubmeshGeometry submesh;
+    submesh.BaseVertexLocation = 0;
+    submesh.Bounds;
+    submesh.IndexCount = (UINT)indices.size();
+
+    mBoxGeo->DrawArgs["box"] = submesh;
 }
 
 void Box::BuildPSO()
 {
-
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
+    ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+    psoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
+    psoDesc.pRootSignature = mRootSignature.Get();
+    psoDesc.VS =
+    {
+        reinterpret_cast<BYTE*>(mvsByteCode->GetBufferPointer()),
+        mvsByteCode->GetBufferSize()
+    };
+    psoDesc.PS =
+    {
+        reinterpret_cast<BYTE*>(mpsByteCode->GetBufferPointer()),
+        mpsByteCode->GetBufferSize()
+    };
+    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+    psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+    psoDesc.SampleMask = UINT_MAX;
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    psoDesc.NumRenderTargets = 1;
+    psoDesc.RTVFormats[0] = mBackBufferFormat;
+    psoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
+    psoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
+    psoDesc.DSVFormat = mDepthStencilFormat;
+    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
 }
