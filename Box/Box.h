@@ -21,8 +21,8 @@ public:
     Box(HINSTANCE hInstance);
     Box(const Box& rhs) = delete;
     Box& operator=(const Box& rhs) = delete;
-    virtual ~Box();
-
+    
+    virtual ~Box() override;
     virtual bool Initialize() override;
 
 private:

@@ -129,6 +129,7 @@
     <ClCompile Include="Engine\D3D12\D3D12Util.cpp" />
     <ClCompile Include="Engine\D3D12\GameTimer.cpp" />
     <ClCompile Include="Engine\WE.cpp" />
+    <None Include="Shaders\color.hlsl" />
     <ClInclude Include="Box\Box.h" />
     <ClInclude Include="Engine\Common\MathHelper.h" />
     <ClInclude Include="Engine\Common\UploadBuffer.h" />
@@ -141,13 +142,6 @@
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
     <None Include="README.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="Shaders\color.hlsl">
-      <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

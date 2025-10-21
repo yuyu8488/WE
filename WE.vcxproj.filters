@@ -63,6 +63,6 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="Shaders\color.hlsl" />
+    <FxCompile Include="Shaders\color.hlsl" />
   </ItemGroup>
 </Project>

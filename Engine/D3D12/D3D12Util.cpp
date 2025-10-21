@@ -1,22 +1,22 @@
-#include "D3D12Util.h"
+ï»¿#include "D3D12Util.h"
 #include <comdef.h>
 
 Microsoft::WRL::ComPtr<ID3DBlob> D3DUtil::LoadBinary(const std::wstring& filename)
 {
-	// ¹ÙÀÌ³Ê¸® ¸ğµå·Î ÆÄÀÏÀ» ¿­¾î ÀĞ´Â´Ù
+	// ë°”ì´ë„ˆë¦¬ ëª¨ë“œë¡œ íŒŒì¼ì„ ì—´ì–´ ì½ëŠ”ë‹¤
 	std::ifstream fin(filename, std::ios::binary);
 
-	// seekg()¸¦ ÅëÇØ ÆÄÀÏ ³¡À¸·Î ÀÌµ¿.
+	// seekg()ë¥¼ í†µí•´ íŒŒì¼ ëìœ¼ë¡œ ì´ë™.
 	fin.seekg(0, std::ios_base::end);
-	// tellg() ÆÄÀÏ Å©±â ±¸ÇÔ.
+	// tellg() íŒŒì¼ í¬ê¸° êµ¬í•¨.
 	std::ifstream::pos_type size = (int)fin.tellg();
-	// seekg()¸¦ ÅëÇØ ÆÄÀÏ ½ÃÀÛÀ§Ä¡·Î ÀÌµ¿.
+	// seekg()ë¥¼ í†µí•´ íŒŒì¼ ì‹œì‘ìœ„ì¹˜ë¡œ ì´ë™.
 	fin.seekg(0, std::ios_base::beg);
 
 	Microsoft::WRL::ComPtr<ID3DBlob> blob;
 	ThrowIfFailed(D3DCreateBlob(size, blob.GetAddressOf()));
 
-	// ÆÄÀÏ ³»¿ëÀ» blob ¹öÆÛ·Î ÀĞ¾î¿È.
+	// íŒŒì¼ ë‚´ìš©ì„ blob ë²„í¼ë¡œ ì½ì–´ì˜´.
 	fin.read((char*)blob->GetBufferPointer(), size);
 	fin.close();
 
@@ -90,7 +90,10 @@ Microsoft::WRL::ComPtr<ID3DBlob> D3DUtil::CompileShader(const std::wstring& file
 
 	if (errors)
 	{
-		OutputDebugStringA((char*)errors->GetBufferPointer());
+		/*OutputDebugStringA((char*)errors->GetBufferPointer());*/
+		std::string msg((char*)errors->GetBufferPointer(), errors->GetBufferSize());
+		MessageBoxA(nullptr, msg.c_str(), "Shader Compile Error", MB_OK);
+
 	}
 	
 	ThrowIfFailed(hr);

@@ -156,7 +156,7 @@ LRESULT D3D12App::MsgProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
                     mMinimized = false;
                     OnResize();
                 }
-                else if (mMinimized)
+                else if (mMaximized)
                 {
                     mAppPaused = false;
                     mMaximized = false;
@@ -196,14 +196,6 @@ LRESULT D3D12App::MsgProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
     }
 
     return DefWindowProc(Hwnd, Msg, WParam, LParam);
-}
-
-void D3D12App::Update(const GameTimer& gt)
-{
-}
-
-void D3D12App::Draw(const GameTimer& gt)
-{
 }
 
 void D3D12App::CreateRtvAndDsvDescriptorHeaps()

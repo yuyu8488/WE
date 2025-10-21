@@ -19,7 +19,7 @@ bool Box::Initialize()
     ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
     BuildDescriptorHeaps();
-    BuildRootSignature();
+    BuildConstantBuffers();
     BuildRootSignature();
     BuildShadersAndInputLayout();
     BuildBoxGeometry();
@@ -105,7 +105,7 @@ void Box::Draw(const GameTimer& gt)
 
     mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
-    mCommandList->DrawIndexedInstanced(mBoxGeo->DrawArgs["box"].IndexCount, 1,0,0,0);
+    mCommandList->DrawIndexedInstanced(mBoxGeo->DrawArgs["boxGeo"].IndexCount, 1,0,0,0);
 
     rb = CD3DX12_RESOURCE_BARRIER::Transition(
     GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -141,10 +141,10 @@ void Box::BuildConstantBuffers()
     UINT ObjCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
     D3D12_GPU_VIRTUAL_ADDRESS cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
-    int noxCBufIndex = 0;
-    cbAddress += noxCBufIndex * ObjCBByteSize;
+    int boxCBufIndex = 0;
+    cbAddress += boxCBufIndex*ObjCBByteSize;
 
-    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
     cbvDesc.BufferLocation = cbAddress;
     cbvDesc.SizeInBytes = D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
@@ -188,7 +188,7 @@ void Box::BuildShadersAndInputLayout()
     HRESULT hr = S_OK;
     
     mvsByteCode = D3DUtil::CompileShader(L"Shaders/color.hlsl", nullptr, "VS", "vs_5_0");
-    mvsByteCode = D3DUtil::CompileShader(L"Shaders/color.hlsl", nullptr, "PS", "ps_5_0");
+    mpsByteCode = D3DUtil::CompileShader(L"Shaders/color.hlsl", nullptr, "PS", "ps_5_0");
 
     mInputLayout =
     {
@@ -281,12 +281,12 @@ void Box::BuildPSO()
     psoDesc.pRootSignature = mRootSignature.Get();
     psoDesc.VS =
     {
-        reinterpret_cast<BYTE*>(mvsByteCode->GetBufferPointer()),
+        static_cast<BYTE*>(mvsByteCode->GetBufferPointer()),
         mvsByteCode->GetBufferSize()
     };
     psoDesc.PS =
     {
-        reinterpret_cast<BYTE*>(mpsByteCode->GetBufferPointer()),
+        static_cast<BYTE*>(mpsByteCode->GetBufferPointer()),
         mpsByteCode->GetBufferSize()
     };
     psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
