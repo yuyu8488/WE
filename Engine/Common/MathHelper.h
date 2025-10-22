@@ -22,6 +22,4 @@ public:
             0.f, 0.f, 0.f, 1.f);
         return I;
     }
-
-	static const float Pi;
 };

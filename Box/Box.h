@@ -4,10 +4,21 @@
 #include "../Engine/Common/MathHelper.h"
 #include "../Engine/Common/UploadBuffer.h"
 
+
 struct Vertex
 {
     DirectX::XMFLOAT3 Pos;
     DirectX::XMFLOAT4 Color;
+};
+
+struct VertexEx
+{
+	DirectX::XMFLOAT3 Pos;
+    DirectX::XMFLOAT4 Tangent;
+    DirectX::XMFLOAT3 Normal;
+    DirectX::XMFLOAT2 Tex0;
+    DirectX::XMFLOAT2 Tex1;
+    DirectX::PackedVector::XMCOLOR Color;
 };
 
 struct ObjectConstants
