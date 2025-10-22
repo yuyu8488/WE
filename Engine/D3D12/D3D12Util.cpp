@@ -39,6 +39,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> D3DUtil::CreateDefaultBuffer(ID3D12Device
 		nullptr,
 		IID_PPV_ARGS(defaultBuffer.GetAddressOf())));
 
+	// CPU 메모리의 자료를 기본 버퍼에 복사하려면 임시 업로드 힙이 필요.
 	heap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	desc = CD3DX12_RESOURCE_DESC::Buffer(byteSize);
 	ThrowIfFailed(device->CreateCommittedResource(

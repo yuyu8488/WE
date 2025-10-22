@@ -60,7 +60,7 @@ void Box::Update(const GameTimer& gt)
     DirectX::XMMATRIX World = XMLoadFloat4x4(&mWorld);
     DirectX::XMMATRIX Proj = DirectX::XMLoadFloat4x4(&mProj);
 
-    DirectX::XMMATRIX WorldViewProjection = World * Proj * View;
+    DirectX::XMMATRIX WorldViewProjection = World * View * Proj;
 
     // Update constant buffer
     ObjectConstants ObjConstants;
@@ -95,6 +95,8 @@ void Box::Draw(const GameTimer& gt)
     mCommandList->OMSetRenderTargets(1, &BackBufferView, true,  &DepthStencilView);
 
     ID3D12DescriptorHeap* DescriptorHeaps[] = {mCbvHeap.Get()};
+    mCommandList->SetDescriptorHeaps(_countof(DescriptorHeaps), DescriptorHeaps);
+    
     mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
     D3D12_VERTEX_BUFFER_VIEW Vbv = mBoxGeo->VertexBufferView();
@@ -103,9 +105,11 @@ void Box::Draw(const GameTimer& gt)
     mCommandList->IASetIndexBuffer(&Ibv);
     mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
-    mCommandList->DrawIndexedInstanced(mBoxGeo->DrawArgs["boxGeo"].IndexCount, 1,0,0,0);
+    auto GPUDescriptorHandleForHeapStart = mCbvHeap->GetGPUDescriptorHandleForHeapStart();
+    mCommandList->SetGraphicsRootDescriptorTable(0, GPUDescriptorHandleForHeapStart);
+
+    mCommandList->DrawIndexedInstanced(mBoxGeo->DrawArgs["box"].IndexCount, 1,0,0,0);
 
     rb = CD3DX12_RESOURCE_BARRIER::Transition(
     GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -300,4 +304,42 @@ void Box::BuildPSO()
     psoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
     psoDesc.DSVFormat = mDepthStencilFormat;
     ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
+}
+
+void Box::OnMouseDown(WPARAM btnState, int x, int y)
+{
+    mLastMousePos.x = x;
+    mLastMousePos.y = y;
+
+    SetCapture(mhMainWnd);
+}
+
+void Box::OnMouseUp(WPARAM btnState, int x, int y)
+{
+    ReleaseCapture();
+}
+
+void Box::OnMouseMove(WPARAM btnState, int x, int y)
+{
+    if ((btnState & MK_LBUTTON) != 0)
+    {
+        float dx = DirectX::XMConvertToRadians(0.25f * static_cast<float>(x - mLastMousePos.x));
+        float dy = DirectX::XMConvertToRadians(0.25f * static_cast<float>(y - mLastMousePos.y));
+
+        mTheta += dx;
+        mPhi += dy;
+
+        mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
+    }
+    else if ((btnState & MK_RBUTTON) != 0)
+    {
+        float dx = 0.005f * static_cast<float>(x - mLastMousePos.x);
+        float dy = 0.005f * static_cast<float>(y - mLastMousePos.y);
+
+        mRadius += dx - dy;
+
+        mRadius = MathHelper::Clamp(mRadius, 3.f, 15.f);
+    }
+    mLastMousePos.x = x;
+    mLastMousePos.y = y;
 }

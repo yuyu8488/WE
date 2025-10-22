@@ -25,6 +25,7 @@ public:
     virtual ~Box() override;
     virtual bool Initialize() override;
 
+
 private:
     virtual void OnResize() override;
     virtual void Update(const GameTimer& gt) override;
@@ -36,6 +37,10 @@ private:
     void BuildShadersAndInputLayout();
     void BuildBoxGeometry();
     void BuildPSO();
+
+    virtual void OnMouseDown(WPARAM btnState, int x, int y) override;
+    virtual void OnMouseUp(WPARAM btnState, int x, int y) override;
+    virtual void OnMouseMove(WPARAM btnState, int x, int y) override;
 
 private:
     Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;

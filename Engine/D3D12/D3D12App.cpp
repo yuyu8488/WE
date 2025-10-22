@@ -113,12 +113,12 @@ bool D3D12App::Initialize()
     return true;
 }
 
-LRESULT D3D12App::MsgProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
+LRESULT D3D12App::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    switch (Msg)
+    switch (msg)
     {
     case WM_ACTIVATE:
-        if (LOWORD(WParam) == WA_INACTIVE)
+        if (LOWORD(wParam) == WA_INACTIVE)
         {
             mAppPaused = true;
             mTimer.Stop();
@@ -129,26 +129,38 @@ LRESULT D3D12App::MsgProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
             mTimer.Start();
         }
         break;
-
+	case WM_LBUTTONDOWN:
+	case WM_MBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+		OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		return 0;
+	case WM_LBUTTONUP:
+	case WM_MBUTTONUP:
+	case WM_RBUTTONUP:
+		OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		return 0;
+	case WM_MOUSEMOVE:
+		OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		return 0;
     case WM_SIZE:
-        mClientWidth = LOWORD(LParam);
-        mClientHeight = HIWORD(LParam);
+        mClientWidth = LOWORD(lParam);
+        mClientHeight = HIWORD(lParam);
         if (mD3dDevice)
         {
-            if (WParam == SIZE_MINIMIZED)
+            if (wParam == SIZE_MINIMIZED)
             {
                 mAppPaused = true;
                 mMinimized = true;
                 mMaximized = false;
             }
-            else if (WParam == SIZE_MAXIMIZED)
+            else if (wParam == SIZE_MAXIMIZED)
             {
                 mAppPaused = false;
                 mMinimized = false;
                 mMaximized = true;
                 OnResize();
             }
-            else if (WParam == SIZE_RESTORED)
+            else if (wParam == SIZE_RESTORED)
             {
                 if (mMinimized)
                 {
@@ -190,12 +202,12 @@ LRESULT D3D12App::MsgProc(HWND Hwnd, UINT Msg, WPARAM WParam, LPARAM LParam)
     case WM_MENUCHAR:
         return MAKELRESULT(0, MNC_CLOSE);
     case WM_GETMINMAXINFO:
-        ((MINMAXINFO*)LParam)->ptMinTrackSize.x = 200;
-        ((MINMAXINFO*)LParam)->ptMinTrackSize.y = 200;
+        ((MINMAXINFO*)lParam)->ptMinTrackSize.x = 200;
+        ((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200;
         break;
     }
 
-    return DefWindowProc(Hwnd, Msg, WParam, LParam);
+    return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
 void D3D12App::CreateRtvAndDsvDescriptorHeaps()
