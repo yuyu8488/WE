@@ -11,6 +11,16 @@ struct Vertex
     DirectX::XMFLOAT4 Color;
 };
 
+struct VPosData
+{
+    DirectX::XMFLOAT3 pos;
+};
+
+struct VColorData
+{
+    DirectX::XMFLOAT4 Color;
+};
+
 struct VertexEx
 {
 	DirectX::XMFLOAT3 Pos;
