@@ -242,55 +242,53 @@ void Box::BuildBoxGeometry()
     //    Vertex({ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Magenta) })
     //};
 
-    std::array<VPosData, 8> vertices =
+    std::array<VPosData, 5> vertices =
     {
-        VPosData({DirectX::XMFLOAT3(-1.f, -1.f, -1.f)}),
-        VPosData({DirectX::XMFLOAT3(-1.f, +1.f, -1.f)}),
-        VPosData({DirectX::XMFLOAT3(+1.f, +1.f, -1.f)}),
-        VPosData({DirectX::XMFLOAT3(+1.f, -1.f, -1.f)}),
-        VPosData({DirectX::XMFLOAT3(-1.f, -1.f, +1.f)}),
-        VPosData({DirectX::XMFLOAT3(-1.f, +1.f, +1.f)}),
-        VPosData({DirectX::XMFLOAT3(+1.f, +1.f, +1.f)}),
-        VPosData({DirectX::XMFLOAT3(+1.f, -1.f, +1.f)}),
+        VPosData({DirectX::XMFLOAT3(-1.f, -0.f, -1.f)}),
+        VPosData({DirectX::XMFLOAT3(-1.f, +0.f, +1.f)}),
+        VPosData({DirectX::XMFLOAT3(+1.f, +0.f, +1.f)}),
+        VPosData({DirectX::XMFLOAT3(+1.f, -0.f, -1.f)}),
+        VPosData({DirectX::XMFLOAT3(+0.f,  +2.f, +0.f)}),
     };
 
-    std::array<VColorData, 8> colors = 
+    std::array<VColorData, 5> colors = 
     {
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::White)}),
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Black)}),
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Blue)}),
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Yellow)}),
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Magenta)}),
         VColorData({DirectX::XMFLOAT4(DirectX::Colors::Green)}),
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Cyan)}),
+        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Green)}),
+        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Green)}),
+        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Green)}),
+        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
     };
 
-    std::array<std::uint16_t, 36> indices =
+    std::array<std::uint16_t, 18> indices =
     {
+        /* Box
         // front face
         0, 1, 2,
         0, 2, 3,
-
         // back face
         4, 6, 5,
         4, 7, 6,
-
         // left face
         4, 5, 1,
         4, 1, 0,
-
         // right face
         3, 2, 6,
         3, 6, 7,
-
         // top face
         1, 5, 6,
         1, 6, 2,
-
         // bottom face
         4, 0, 3,
         4, 3, 7
+        */
+        0,3,2,
+        0,2,1,
+        
+        0,4,3,
+        3,4,2,
+        2,4,1,
+        1,4,0
     };
 
     //const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);

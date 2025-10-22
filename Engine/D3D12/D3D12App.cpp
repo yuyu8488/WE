@@ -268,7 +268,6 @@ void D3D12App::OnResize()
     DepthStencilDesc.Height = mClientHeight;
     DepthStencilDesc.DepthOrArraySize = 1;
     DepthStencilDesc.MipLevels = 1;
-    DepthStencilDesc.MipLevels = 1;
     DepthStencilDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
     DepthStencilDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
     DepthStencilDesc.Format = mDepthStencilFormat;
