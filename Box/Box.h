@@ -34,6 +34,7 @@ struct VertexEx
 struct ObjectConstants
 {
     DirectX::XMFLOAT4X4 WorldViewProjection = MathHelper::Identity4x4();
+    float gTime;
 };
 
 class Box : public D3D12App

@@ -1,6 +1,7 @@
 cbuffer cbPerObject : register(b0)
 {
-    float4x4 gWorldViewProjection;
+	float4x4 gWorldViewProjection;
+	float gTime;
 };
 
 struct VertexIn
@@ -18,6 +19,10 @@ struct VertexOut
 VertexOut VS(VertexIn vin)
 {
     VertexOut vout;
+
+	vin.PosL.xy += 0.5f * sin(vin.PosL.x) * sin(3.f * gTime);
+	vin.PosL.z *= 0.6f + 0.4f * sin(2.0f * gTime);
+    
     vout.PosH = mul(float4(vin.PosL, 1.f), gWorldViewProjection);
     vout.Color = vin.Color;
 

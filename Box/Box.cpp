@@ -59,13 +59,13 @@ void Box::Update(const GameTimer& gt)
     
     DirectX::XMMATRIX World = XMLoadFloat4x4(&mWorld);
     DirectX::XMMATRIX Proj = DirectX::XMLoadFloat4x4(&mProj);
-
     DirectX::XMMATRIX WorldViewProjection = World * View * Proj;
 
     // Update constant buffer
     ObjectConstants ObjConstants;
+    ObjConstants.gTime = mTimer.TotalTime();
     DirectX::XMStoreFloat4x4(&ObjConstants.WorldViewProjection, DirectX::XMMatrixTranspose(WorldViewProjection));
-    mObjectCB->CopyData(0, ObjConstants);    
+    mObjectCB->CopyData(0, ObjConstants);
 }
 
 void Box::Draw(const GameTimer& gt)
@@ -98,7 +98,6 @@ void Box::Draw(const GameTimer& gt)
     mCommandList->SetDescriptorHeaps(_countof(DescriptorHeaps), DescriptorHeaps);
     
     mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
-
 
     // 여기 수정 필요
     //D3D12_VERTEX_BUFFER_VIEW Vbv = mBoxGeo->VertexBufferView();
@@ -155,7 +154,7 @@ void Box::BuildConstantBuffers()
 
     D3D12_GPU_VIRTUAL_ADDRESS cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
     int boxCBufIndex = 0;
-    cbAddress += boxCBufIndex*ObjCBByteSize;
+    cbAddress += boxCBufIndex*ObjCBByteSize; 
 
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
     cbvDesc.BufferLocation = cbAddress;
