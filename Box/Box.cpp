@@ -57,15 +57,28 @@ void Box::Update(const GameTimer& gt)
     DirectX::XMMATRIX View = DirectX::XMMatrixLookAtLH(Pos, Target, Up);
     DirectX::XMStoreFloat4x4(&mView, View);
     
-    DirectX::XMMATRIX World = XMLoadFloat4x4(&mWorld);
+    //DirectX::XMMATRIX World = XMLoadFloat4x4(&mWorld);
+    DirectX::XMMATRIX BoxWorld = XMLoadFloat4x4(&mWorld);
+	DirectX::XMFLOAT4X4 P(
+		1.f, 0.f, 0.f, 0.f,
+		0.f, 1.f, 0.f, 0.f,
+		0.f, 0.f, 1.f, 0.f,
+		0.f, 1.f, 0.f, 1.f);
+    DirectX::XMMATRIX PyramidWorld = XMLoadFloat4x4(&P);
+
+
     DirectX::XMMATRIX Proj = DirectX::XMLoadFloat4x4(&mProj);
-    DirectX::XMMATRIX WorldViewProjection = World * View * Proj;
+    //DirectX::XMMATRIX WorldViewProjection = World * View * Proj;
 
     // Update constant buffer
     ObjectConstants ObjConstants;
     ObjConstants.gTime = mTimer.TotalTime();
-    DirectX::XMStoreFloat4x4(&ObjConstants.WorldViewProjection, DirectX::XMMatrixTranspose(WorldViewProjection));
-    mObjectCB->CopyData(0, ObjConstants);
+
+	DirectX::XMStoreFloat4x4(&ObjConstants.WorldViewProjection, DirectX::XMMatrixTranspose(BoxWorld * View * Proj));
+	mObjectCB->CopyData(0, ObjConstants);
+
+    DirectX::XMStoreFloat4x4(&ObjConstants.WorldViewProjection, DirectX::XMMatrixTranspose(PyramidWorld * View * Proj));
+    mObjectCB->CopyData(1, ObjConstants);
 }
 
 void Box::Draw(const GameTimer& gt)
@@ -99,7 +112,6 @@ void Box::Draw(const GameTimer& gt)
     
     mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
-    // 여기 수정 필요
     //D3D12_VERTEX_BUFFER_VIEW Vbv = mBoxGeo->VertexBufferView();
     //mCommandList->IASetVertexBuffers(0, 1, &Vbv);
     
@@ -117,7 +129,23 @@ void Box::Draw(const GameTimer& gt)
     auto GPUDescriptorHandleForHeapStart = mCbvHeap->GetGPUDescriptorHandleForHeapStart();
     mCommandList->SetGraphicsRootDescriptorTable(0, GPUDescriptorHandleForHeapStart);
 
-    mCommandList->DrawIndexedInstanced(mBoxGeo->DrawArgs["box"].IndexCount, 1,0,0,0);
+    mCommandList->DrawIndexedInstanced(
+        mBoxGeo->DrawArgs["Box"].IndexCount,
+        1,
+        mBoxGeo->DrawArgs["Box"].StartIndexLocation,
+        mBoxGeo->DrawArgs["Box"].BaseVertexLocation,
+        0);
+
+	GPUDescriptorHandleForHeapStart = mCbvHeap->GetGPUDescriptorHandleForHeapStart();
+    GPUDescriptorHandleForHeapStart.ptr += mCbvSrvUavDescriptorSize;
+	mCommandList->SetGraphicsRootDescriptorTable(0, GPUDescriptorHandleForHeapStart);
+
+    mCommandList->DrawIndexedInstanced(
+        mBoxGeo->DrawArgs["Pyramid"].IndexCount,
+        1,
+        mBoxGeo->DrawArgs["Pyramid"].StartIndexLocation,
+        mBoxGeo->DrawArgs["Pyramid"].BaseVertexLocation,
+        0);
 
     rb = CD3DX12_RESOURCE_BARRIER::Transition(
     GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -143,24 +171,34 @@ void Box::BuildDescriptorHeaps()
     cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     cbvHeapDesc.NodeMask = 0;
-    cbvHeapDesc.NumDescriptors = 1;
+    cbvHeapDesc.NumDescriptors = 2;
     ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
 }
 
 void Box::BuildConstantBuffers()
 {
-    mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(mD3dDevice.Get(), 1, true);
-    UINT ObjCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(mD3dDevice.Get(), 2, true);
+	UINT ObjCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	
+	D3D12_GPU_VIRTUAL_ADDRESS cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
+	int boxCBufIndex = 0;
+	cbAddress += boxCBufIndex*ObjCBByteSize; 
+	
+	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+	cbvDesc.BufferLocation = cbAddress;
+    cbvDesc.SizeInBytes = ObjCBByteSize;
+	
+	mD3dDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart()); 
+	
+	int PyramidBufIndex = 1;
+	cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
+    cbAddress += PyramidBufIndex * ObjCBByteSize;
+	cbvDesc.BufferLocation = cbAddress;
+    cbvDesc.SizeInBytes = ObjCBByteSize;
 
-    D3D12_GPU_VIRTUAL_ADDRESS cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
-    int boxCBufIndex = 0;
-    cbAddress += boxCBufIndex*ObjCBByteSize; 
-
-    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-    cbvDesc.BufferLocation = cbAddress;
-    cbvDesc.SizeInBytes = D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
-
-    mD3dDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart());    
+    auto HeapHandle = mCbvHeap->GetCPUDescriptorHandleForHeapStart();
+    HeapHandle.ptr += mCbvSrvUavDescriptorSize;
+    mD3dDevice->CreateConstantBufferView(&cbvDesc, HeapHandle);
 }
 
 void Box::BuildRootSignature()
@@ -241,8 +279,19 @@ void Box::BuildBoxGeometry()
     //    Vertex({ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Magenta) })
     //};
 
-    std::array<VPosData, 5> vertices =
+    std::array<VPosData, 13> vertices =
     {
+		// 정육면체
+        VPosData({DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f)}),
+        VPosData({DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f)}),
+        VPosData({DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f)}),
+        VPosData({DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f)}),
+        VPosData({DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f)}),
+        VPosData({DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f)}),
+        VPosData({DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f)}),
+        VPosData({DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f)}),
+
+        // 사각뿔
         VPosData({DirectX::XMFLOAT3(-1.f, -0.f, -1.f)}),
         VPosData({DirectX::XMFLOAT3(-1.f, +0.f, +1.f)}),
         VPosData({DirectX::XMFLOAT3(+1.f, +0.f, +1.f)}),
@@ -250,18 +299,27 @@ void Box::BuildBoxGeometry()
         VPosData({DirectX::XMFLOAT3(+0.f,  +2.f, +0.f)}),
     };
 
-    std::array<VColorData, 5> colors = 
+    std::array<VColorData, 13> colors = 
     {
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Green)}),
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Green)}),
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Green)}),
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Green)}),
+		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+
+        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
         VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
     };
 
-    std::array<std::uint16_t, 18> indices =
+    std::array<std::uint16_t, 54> indices =
     {
-        /* Box
+       
         // front face
         0, 1, 2,
         0, 2, 3,
@@ -279,15 +337,14 @@ void Box::BuildBoxGeometry()
         1, 6, 2,
         // bottom face
         4, 0, 3,
-        4, 3, 7
-        */
-        0,3,2,
-        0,2,1,
-        
-        0,4,3,
-        3,4,2,
-        2,4,1,
-        1,4,0
+        4, 3, 7,
+
+        0, 3, 2,
+        0, 2, 1,
+        0, 4, 3,
+        3, 4, 2,
+        2, 4, 1,
+		1, 4, 0,
     };
 
     //const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
@@ -317,15 +374,15 @@ void Box::BuildBoxGeometry()
     //    vertices.data(), vbByteSize,
     //    mBoxGeo->VertexBufferUploader);
     
-    mBoxGeo->VColorBufferGPU = D3DUtil::CreateDefaultBuffer(
-        mD3dDevice.Get(), mCommandList.Get(),
-        colors.data(), VColorByteSize,
-        mBoxGeo->VColorBufferUploader);
-
 	mBoxGeo->VPosBufferGPU = D3DUtil::CreateDefaultBuffer(
 		mD3dDevice.Get(), mCommandList.Get(),
 		vertices.data(), VPosByteSize,
 		mBoxGeo->VPosBufferUploader);
+
+    mBoxGeo->VColorBufferGPU = D3DUtil::CreateDefaultBuffer(
+        mD3dDevice.Get(), mCommandList.Get(),
+        colors.data(), VColorByteSize,
+        mBoxGeo->VColorBufferUploader);
 
     mBoxGeo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(
         mD3dDevice.Get(), mCommandList.Get(),
@@ -344,12 +401,27 @@ void Box::BuildBoxGeometry()
     mBoxGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
     mBoxGeo->IndexBufferByteSize = ibByteSize;
 
-    SubmeshGeometry submesh;
-    submesh.BaseVertexLocation = 0;
-    submesh.Bounds;
-    submesh.IndexCount = (UINT)indices.size();
+    //SubmeshGeometry submesh;
+    //submesh.BaseVertexLocation = 0;
+    //submesh.Bounds;
+    //submesh.IndexCount = (UINT)indices.size();
 
-    mBoxGeo->DrawArgs["box"] = submesh;
+    //mBoxGeo->DrawArgs["box"] = submesh;
+
+    SubmeshGeometry BoxMesh;
+    BoxMesh.BaseVertexLocation = 0;
+    BoxMesh.StartIndexLocation = 0;
+    BoxMesh.IndexCount = 36;
+    BoxMesh.Bounds;
+
+    SubmeshGeometry PyramidMesh;
+    PyramidMesh.BaseVertexLocation = 8;
+    PyramidMesh.StartIndexLocation = 36;
+    PyramidMesh.IndexCount = 18;
+    PyramidMesh.Bounds;
+    
+    mBoxGeo->DrawArgs["Box"] = BoxMesh;
+    mBoxGeo->DrawArgs["Pyramid"] = PyramidMesh;
 }
 
 void Box::BuildPSO()
