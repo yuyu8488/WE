@@ -123,17 +123,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Box\Box.cpp" />
     <ClCompile Include="Engine\Common\MathHelper.cpp" />
     <ClCompile Include="Engine\D3D12\D3D12App.cpp" />
     <ClCompile Include="Engine\D3D12\D3D12Util.cpp" />
     <ClCompile Include="Engine\D3D12\GameTimer.cpp" />
     <ClCompile Include="Engine\WE.cpp" />
+    <ClCompile Include="Engine\Common\FrameResource.cpp" />
+    <ClCompile Include="GeometryGenerator.cpp" />
+    <ClCompile Include="Shapes\Shapes.cpp" />
+    <ClInclude Include="Engine\Common\FrameResource.h" />
+    <ClInclude Include="GeometryGenerator.h" />
+    <ClInclude Include="Shapes\Shapes.h" />
     <CustomBuild Include="Shaders\color.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <FileType>Document</FileType>
     </CustomBuild>
-    <ClInclude Include="Box\Box.h" />
     <ClInclude Include="Engine\Common\MathHelper.h" />
     <ClInclude Include="Engine\Common\UploadBuffer.h" />
     <ClInclude Include="Engine\D3D12\D3D12App.h" />
