@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Encoding" addBOMForNewFiles="with BOM under Windows, with no BOM otherwise">
+    <file url="file://$PROJECT_DIR$/Engine/Common/GeometryGenerator.cpp" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Engine/Graphics/D3D11.cpp" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Engine/Graphics/Shaders/PixelShader.hlsl" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Engine/Graphics/Shaders/Shader.fxh" charset="US-ASCII" />
@@ -8,6 +9,7 @@
     <file url="file://$PROJECT_DIR$/Engine/WEngine.cpp" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Object/Box.cpp" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Object/VertexTriangle.cpp" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/Shapes/Shapes.cpp" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/main.cpp" charset="UTF-8" />
   </component>
 </project>

@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "./D3D12/D3D12App.h"
+#include "Common/MathHelper.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int ShowCmd)
 {
@@ -8,13 +9,5 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-try
-{
-
-}
-catch (DxException& e)
-{
-    MessageBox(nullptr, e.ToString().c_str(), L"HR Failed", MB_OK);
-    return 0;
-}
+    
 }

@@ -36,10 +36,10 @@ struct VertexOut
 VertexOut VS(VertexIn vin)
 {
     VertexOut vout;
-    
-	float4 posW = mul(float4(vin.PosL, 1.f), GW);
-    
-    vout.PosH = mul(float4(vin.PosL, 1.f), gWorldViewProjection);
+	
+	float4 posW = mul(float4(vin.PosL, 1.f), gWorld);
+	vout.PosH = mul(posW, gViewProj);
+	
     vout.Color = vin.Color;
 
     return vout;

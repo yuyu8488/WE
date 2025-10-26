@@ -1,5 +1,5 @@
 #include "Shapes.h"
-#include "..\GeometryGenerator.h"
+#include "../Engine/Common/GeometryGenerator.h"
 
 void Shapes::BuildShapeGeometry()
 {
@@ -8,9 +8,7 @@ void Shapes::BuildShapeGeometry()
 	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.f, 30.f, 60, 40);
 	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(.5f, 20, 20);
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.f, 20, 20);
-
-	// 모든 기하구조를 하나의 정점/색인 버퍼에 담는다.
-	// 각 부분 메시가 차지하는 영역들을 정의.
+	
 	UINT boxVertexOffset = 0;
 	UINT gridVertexOffset = (UINT)box.Vertices.size();
 	UINT sphereVertexOffset = gridVertexOffset + (UINT)grid.Vertices.size();
@@ -150,21 +148,6 @@ void Shapes::OnResize()
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void Shapes::OnMouseDown(WPARAM btnState, int x, int y)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void Shapes::OnMouseUp(WPARAM btnState, int x, int y)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void Shapes::OnMouseMove(WPARAM btnState, int x, int y)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
 void Shapes::UpdateObjectCBs(const GameTimer& gt)
 {
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
@@ -206,9 +189,12 @@ void Shapes::UpdateMainPassCB(const GameTimer& gt)
 	DirectX::XMStoreFloat4x4(&mMainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
 	mMainPassCB.EyePosW = mEyePos;
 	mMainPassCB.RenderTargetSize = DirectX::XMFLOAT2((float)mClientWidth, (float)mClientHeight);
-	mMainPassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / mClientWidth, 1.f / mClientHeight);
+	mMainPassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / (float)mClientWidth, 1.f / (float)mClientHeight);
 	mMainPassCB.NearZ = 1.f;
 	mMainPassCB.FarZ = 1000.f;
 	mMainPassCB.TotalTime = gt.TotalTime();
 	mMainPassCB.DeltaTime = gt.DeltaTime();
+
+	auto currPassCB = mCurrFrameResource->PassCB.get();
+	currPassCB->CopyData(0,mMainPassCB);
 }

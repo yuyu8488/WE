@@ -37,12 +37,7 @@ private:
 	virtual void OnResize() override;
 	virtual void Update(const GameTimer& gt) override;
 	virtual void Draw(const GameTimer& gt) override;
-
-
-	virtual void OnMouseDown(WPARAM btnState, int x, int y) override;
-	virtual void OnMouseUp(WPARAM btnState, int x, int y) override;
-	virtual void OnMouseMove(WPARAM btnState, int x, int y) override;
-
+	
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 
@@ -57,10 +52,8 @@ private:
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 
 private:
-
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
-
-
+	
 	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
 	FrameResource* mCurrFrameResource = nullptr;
 	int mCurrFrameResourceIndex = 0;
