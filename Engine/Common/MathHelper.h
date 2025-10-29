@@ -4,6 +4,8 @@
 #include <DirectXMath.h>
 #include <cstdint>
 
+
+
 class MathHelper
 {
 public:
@@ -22,6 +24,9 @@ public:
 			0.f, 0.f, 0.f, 1.f);
 		return I;
 	}
+
+	static const float Infinity;
+	static const float Pi;
 };
 
 
