@@ -30,7 +30,7 @@ inline std::wstring AnsiToWString(const std::string& str)
 	return std::wstring(buffer);
 }
 
-class D3DUtil
+class d3dUtil
 {
 public:
 	static bool IsKeyDown(int vKeyCode);

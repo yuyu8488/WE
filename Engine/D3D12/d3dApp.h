@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "D3D12Util.h"
+#include "d3dUtil.h"
 #include "GameTimer.h"
 
 #pragma comment(lib,"d3dcompiler.lib")
@@ -8,16 +8,16 @@
 #pragma comment(lib, "dxgi.lib")
 
 
-class D3D12App
+class d3dApp
 {
 protected:
-	D3D12App(HINSTANCE hInstance);
-	D3D12App(const D3D12App& rhs) = delete;
-	D3D12App& operator=(const D3D12App& rhs) = delete;
-	virtual ~D3D12App();
+	d3dApp(HINSTANCE hInstance);
+	d3dApp(const d3dApp& rhs) = delete;
+	d3dApp& operator=(const d3dApp& rhs) = delete;
+	virtual ~d3dApp();
 
 public:
-	static D3D12App* GetApp();
+	static d3dApp* GetApp();
 
 	HINSTANCE GetAppInstance() const;
 	HWND GetMainWindow() const;
@@ -61,7 +61,7 @@ protected:
 	//***************************************************************************************
 	// Member variables
 	//***************************************************************************************
-	static D3D12App* mApp;
+	static d3dApp* mApp;
 
 	HINSTANCE mhAppInst = nullptr;
 	HWND mhMainWnd = nullptr;
@@ -78,7 +78,7 @@ protected:
 
 	Microsoft::WRL::ComPtr<IDXGIFactory4> mDxgiFactory;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
-	Microsoft::WRL::ComPtr<ID3D12Device> mD3dDevice;
+	Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice;
 
 	Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
 	UINT64 mCurrentFence = 0;

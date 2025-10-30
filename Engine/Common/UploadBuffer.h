@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "../D3D12/D3D12Util.h"
+#include "../D3D12/d3dUtil.h"
 
 template<typename T>
 class UploadBuffer
@@ -13,7 +13,7 @@ public:
 
         if (isConstantBuffer)
         {
-            mElementByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(T));
+            mElementByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(T));
         }
 
         CD3DX12_HEAP_PROPERTIES HeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);

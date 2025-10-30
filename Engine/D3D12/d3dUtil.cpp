@@ -1,7 +1,7 @@
-﻿#include "D3D12Util.h"
+﻿#include "d3dUtil.h"
 #include <comdef.h>
 
-Microsoft::WRL::ComPtr<ID3DBlob> D3DUtil::LoadBinary(const std::wstring& filename)
+Microsoft::WRL::ComPtr<ID3DBlob> d3dUtil::LoadBinary(const std::wstring& filename)
 {
 	// 바이너리 모드로 파일을 열어 읽는다
 	std::ifstream fin(filename, std::ios::binary);
@@ -23,7 +23,7 @@ Microsoft::WRL::ComPtr<ID3DBlob> D3DUtil::LoadBinary(const std::wstring& filenam
 	return blob;
 }
 
-Microsoft::WRL::ComPtr<ID3D12Resource> D3DUtil::CreateDefaultBuffer(ID3D12Device* device,
+Microsoft::WRL::ComPtr<ID3D12Resource> d3dUtil::CreateDefaultBuffer(ID3D12Device* device,
 	ID3D12GraphicsCommandList* cmdList, const void* initData, UINT64 byteSize,
 	Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer)
 {
@@ -67,7 +67,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> D3DUtil::CreateDefaultBuffer(ID3D12Device
 	return defaultBuffer;
 }
 
-Microsoft::WRL::ComPtr<ID3DBlob> D3DUtil::CompileShader(const std::wstring& filename, const D3D_SHADER_MACRO* defines,
+Microsoft::WRL::ComPtr<ID3DBlob> d3dUtil::CompileShader(const std::wstring& filename, const D3D_SHADER_MACRO* defines,
 	const std::string& entrypoint, const std::string& target)
 {
 	UINT compileFlags = 0;
