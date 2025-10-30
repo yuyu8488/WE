@@ -2,6 +2,7 @@
 #include "../Engine/Common/GeometryGenerator.h"
 
 using namespace DirectX;
+using namespace Microsoft::WRL;
 
 void Shapes::BuildShapeGeometry()
 {
@@ -80,7 +81,7 @@ void Shapes::BuildShapeGeometry()
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = "ShapeGeo";
+	geo->Name = "shapeGeo";
 
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
@@ -114,9 +115,19 @@ void Shapes::BuildShapeGeometry()
 
 	mGeometries[geo->Name] = std::move(geo);
 }
+
+void Shapes::BuildPSOs()
+{
+	
+}
+
 void Shapes::BuildFrameResources()
 {
-
+	for (int i = 0; i < gNumFrameResources; ++i)
+	{
+		mFrameResources.push_back(std::make_unique<FrameResource>(mD3dDevice.Get(),
+			1, (UINT)mAllRitems.size()));
+	}
 }
 
 void Shapes::BuildRenderItems()
@@ -131,12 +142,96 @@ void Shapes::BuildRenderItems()
 	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
 	mAllRitems.push_back(std::move(boxRitem));
 
+	auto gridRitem = std::make_unique<RenderItem>();
+	gridRitem->World = MathHelper::Identity4x4();
+	gridRitem->ObjCBIndex = 1;
+	gridRitem->Geo = mGeometries["shapeGeo"].get();
+	gridRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
+	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
+	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 	
+	UINT objCBIndex = 2;
+	for (int i = 0; i < 5; ++i)
+	{
+		auto leftCylRitem = std::make_unique<RenderItem>();
+		auto rightCylRitem = std::make_unique<RenderItem>();
+		auto leftSphereRitem = std::make_unique<RenderItem>();
+		auto rightSphereRitem = std::make_unique<RenderItem>();
+
+		XMMATRIX leftCylWorld = XMMatrixTranslation(-5.f, 1.5f, -10.f + i * 5.f);
+		XMMATRIX rightCylWorld = XMMatrixTranslation(5.f, 1.5f, -10.f + i * 5.f);
+
+		XMMATRIX leftSphereWorld = XMMatrixTranslation(-5.f, 3.5f, -10.f + i * 5.f);
+		XMMATRIX rightSphereWorld = XMMatrixTranslation(+5.f, 3.5f, -10.f + i * 5.f);
+
+		XMStoreFloat4x4(&leftCylRitem->World, leftCylWorld);
+		leftCylRitem->ObjCBIndex = objCBIndex++;
+		leftCylRitem->Geo = mGeometries["shapeGeo"].get();
+		leftCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		leftCylRitem->IndexCount = leftCylRitem->Geo->DrawArgs["cylinder"].IndexCount;
+		leftCylRitem->StartIndexLocation = leftCylRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
+		leftCylRitem->BaseVertexLocation = leftCylRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+
+		XMStoreFloat4x4(&rightCylRitem->World, rightCylWorld);
+		rightCylRitem->ObjCBIndex = objCBIndex++;
+		rightCylRitem->Geo = mGeometries["shapeGeo"].get();
+		rightCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		rightCylRitem->IndexCount = rightCylRitem->Geo->DrawArgs["cylinder"].IndexCount;
+		rightCylRitem->StartIndexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
+		rightCylRitem->BaseVertexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+
+		XMStoreFloat4x4(&leftSphereRitem->World, leftSphereWorld);
+		leftSphereRitem->ObjCBIndex = objCBIndex++;
+		leftSphereRitem->Geo = mGeometries["shapeGeo"].get();
+		leftSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		leftSphereRitem->IndexCount = leftSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
+		leftSphereRitem->StartIndexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
+		leftSphereRitem->BaseVertexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
+
+		XMStoreFloat4x4(&rightSphereRitem->World, rightSphereWorld);
+		rightSphereRitem->ObjCBIndex = objCBIndex++;
+		rightSphereRitem->Geo = mGeometries["shapeGeo"].get();
+		rightSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
+		rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
+		rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
+
+		mAllRitems.push_back(std::move(leftCylRitem));
+		mAllRitems.push_back(std::move(rightCylRitem));
+		mAllRitems.push_back(std::move(leftSphereRitem));
+		mAllRitems.push_back(std::move(rightSphereRitem));
+
+		for (auto& e : mAllRitems)
+		{
+			mOpaqueRitems.push_back(e.get());
+		}
+	}
 }
 
 void Shapes::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
 {
+	UINT objCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
 
+	for (size_t i = 0; i < ritems.size(); ++i)
+	{
+		auto ri = ritems[i];
+
+		D3D12_VERTEX_BUFFER_VIEW VertexView = ri->Geo->VertexBufferView();
+		D3D12_INDEX_BUFFER_VIEW IndexView = ri->Geo->IndexBufferView();
+		cmdList->IASetVertexBuffers(0, 1, &VertexView);
+		cmdList->IASetIndexBuffer(&IndexView);
+		cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
+
+		// 현재 프레임 자원에 대한 서술자 힙에서 이 물체를 위한 CBV의 오프셋을 구함.
+		UINT cbvIndex = mCurrFrameResourceIndex * (UINT)mOpaqueRitems.size() + ri->ObjCBIndex;
+		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+		cbvHandle.Offset(cbvIndex, mCbvSrvUavDescriptorSize);
+
+		cmdList->SetGraphicsRootDescriptorTable(0, cbvHandle);
+		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
+	}
 }
 
 Shapes::~Shapes()
@@ -147,7 +242,7 @@ Shapes::~Shapes()
 bool Shapes::Initialize()
 {
 	if (!D3D12App::Initialize())
-		return;
+		return false;
 
 	ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
@@ -177,7 +272,73 @@ void Shapes::Update(const GameTimer& gt)
 
 void Shapes::Draw(const GameTimer& gt)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	auto cmdListAlloc = mCurrFrameResource->CmdListAlloc;
+
+	// 명령 기록에 관련된 메모리의 재활용 위해 명령할당자를 재설정.
+	// 재설정은 GPU가 관련 명령 목록들을 모두 처리한 후에 일어남.
+	ThrowIfFailed(cmdListAlloc->Reset());
+
+	// 명령 목록을 ExecuteCommandList를 통해서 명령 대기열에 추가했다면 명령 목록을 재설정 할 수 있다. 명령 목록을 재설정하면 메모리가 재활용 됨.
+	if (mIsWireFrame)
+	{
+		ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mPSOs["opaque_wireframe"].Get()));
+	}
+	else
+	{
+		ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mPSOs["opaque"].Get()));
+	}
+
+	mCommandList->RSSetViewports(1, &mScreenViewport);
+	mCommandList->RSSetScissorRects(1, &mScissorRect);
+
+	// 자원 용도 상태 전이 Direct3D에 통지
+	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(GetCurrentBackBuffer(),
+		D3D12_RESOURCE_STATE_PRESENT,
+		D3D12_RESOURCE_STATE_RENDER_TARGET);
+	mCommandList->ResourceBarrier(1, &barrier);
+
+	// 후면 버퍼 깊이 버퍼 지움.
+	mCommandList->ClearRenderTargetView(GetCurrentBackBufferView(),
+		DirectX::Colors::LightSteelBlue, 0, nullptr);
+	mCommandList->ClearDepthStencilView(GetDepthStencilView(),
+		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
+
+	// 렌더링 결과가 기록될 렌더 대상 버퍼 지정.DSV
+	auto BackBufferView = GetCurrentBackBufferView();
+	auto DSV = GetDepthStencilView();
+	mCommandList->OMSetRenderTargets(1, &BackBufferView, true, &DSV);
+
+	ID3D12DescriptorHeap* descriptorHeap[] = { mCbvHeap.Get() };
+	mCommandList->SetDescriptorHeaps(_countof(descriptorHeap), descriptorHeap);
+
+	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+
+	int passCbvIndex = mPassCbvOffset + mCurrFrameResourceIndex;
+	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+	passCbvHandle.Offset(passCbvIndex, mCbvSrvUavDescriptorSize);
+	mCommandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
+
+	DrawRenderItems(mCommandList.Get(), mOpaqueRitems);
+
+	barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		GetCurrentBackBuffer(),
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		D3D12_RESOURCE_STATE_PRESENT);
+	mCommandList->ResourceBarrier(1, &barrier);
+
+	// 명령들의 기록을 마침.
+	ThrowIfFailed(mCommandList->Close());
+
+	// 명령 실행을 위해 명령 목록을 명령 대기열에 추가.
+	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
+	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+	
+	// 후면 버퍼와 전면 버퍼를 교환한다.
+	ThrowIfFailed(mSwapChain->Present(0, 0));
+	mCurrBackBuffer = (mCurrBackBuffer + 1) % SwapChainBufferCount;
+
+	mCurrFrameResource->Fence = ++mCurrentFence;
+	mCommandQueue->Signal(mFence.Get(), mCurrentFence);
 }
 
 void Shapes::OnResize()
@@ -269,6 +430,7 @@ void Shapes::BuildConstantBufferViews()
 		{
 			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = objectCB->GetGPUVirtualAddress();
 
+			// 현재 버퍼에서 i번째 물체별 상수 버퍼의 로프셋을 가상주소에 더한다.
 			cbAddress += i * objCBByteSize;
 
 			int heapIndex = frameIndex * objCount + i;
@@ -284,28 +446,32 @@ void Shapes::BuildConstantBufferViews()
 	}
 
 	UINT passCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
-
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
 	{
 		auto passCB = mFrameResources[frameIndex]->PassCB->Resource();
-		for (UINT i = 0; i < objCount; ++i)
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = passCB->GetGPUVirtualAddress();
 
-			int heapIndex = mPassCbvOffset + frameIndex;
-			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-			handle.Offset(heapIndex, mCbvSrvUavDescriptorSize);
+		// 패스별 버퍼는 프레임 자원당 하나의 cbuffer만 저장.
+		D3D12_GPU_VIRTUAL_ADDRESS cbAddress = passCB->GetGPUVirtualAddress();
 
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = passCBByteSize;
+		// 서술자 힘 안에서 패스별 CBV의 오프셋
+		int heapIndex = mPassCbvOffset + frameIndex;
+		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+		handle.Offset(heapIndex, mCbvSrvUavDescriptorSize);
+		
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+		cbvDesc.BufferLocation = cbAddress;
+		cbvDesc.SizeInBytes = passCBByteSize;
 
-			mD3dDevice->CreateConstantBufferView(&cbvDesc, handle);
-		}
+		mD3dDevice->CreateConstantBufferView(&cbvDesc, handle);
 	}
 }
 
 void Shapes::BuildRootSignature()
 {
 	
+}
+
+void Shapes::BuildShadersAndInputLayout()
+{
+
 }
