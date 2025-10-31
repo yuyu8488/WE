@@ -204,6 +204,7 @@
     <ClCompile Include="Engine\D3D12\d3dUtil.cpp" />
     <ClCompile Include="Engine\D3D12\GameTimer.cpp" />
     <ClCompile Include="Engine\Common\FrameResource.cpp" />
+    <ClCompile Include="Examples\LandAndWavesApp.cpp" />
     <ClCompile Include="Shapes\ShapesApp.cpp" />
     <ClInclude Include="Engine\Common\FrameResource.h" />
     <ClInclude Include="Engine\Common\GeometryGenerator.h" />

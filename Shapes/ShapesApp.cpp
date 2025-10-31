@@ -178,38 +178,36 @@ void ShapesApp::UpdateCamera(const GameTimer& gt)
 void ShapesApp::BuildShapeGeometry()
 {
 	GeometryGenerator geoGen;
-
 	GeometryGenerator::MeshData box = geoGen.CreateBox(1.5f, 0.5f, 1.5f, 3);
+	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.f, 30.f, 60, 40);
+	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(.5f, 20, 20);
+	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.f, 20, 20);
+
 	UINT boxVertexOffset = 0;
+	UINT gridVertexOffset = (UINT)box.Vertices.size();
+	UINT sphereVertexOffset = gridVertexOffset + (UINT)grid.Vertices.size();
+	UINT cylinderVertexOffset = sphereVertexOffset + (UINT)sphere.Vertices.size();
+
 	UINT boxIndexOffset = 0;
+	UINT gridIndexOffset = (UINT)box.Indices32.size();
+	UINT sphereIndexOffset = gridIndexOffset + (UINT)grid.Indices32.size();
+	UINT cylinderIndexOffset = sphereIndexOffset + (UINT)sphere.Indices32.size();
+
 
 	SubmeshGeometry boxSubmesh;
 	boxSubmesh.IndexCount = (UINT)box.Indices32.size();
 	boxSubmesh.StartIndexLocation = boxIndexOffset;
 	boxSubmesh.BaseVertexLocation = boxVertexOffset;
 
-
-	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.f, 30.f, 60, 40);
-	UINT gridVertexOffset = (UINT)box.Vertices.size();
-	UINT gridIndexOffset = (UINT)box.Indices32.size();
-
 	SubmeshGeometry gridSubmesh;
 	gridSubmesh.IndexCount = (UINT)grid.Indices32.size();
 	gridSubmesh.StartIndexLocation = gridIndexOffset;
 	gridSubmesh.BaseVertexLocation = gridVertexOffset;
-
-	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(.5f, 20, 20);
-	UINT sphereVertexOffset = gridVertexOffset + (UINT)grid.Vertices.size();
-	UINT sphereIndexOffset = gridIndexOffset + (UINT)grid.Indices32.size();
 	
 	SubmeshGeometry sphereSubmesh;
 	sphereSubmesh.IndexCount = (UINT)sphere.Indices32.size();
 	sphereSubmesh.StartIndexLocation = sphereIndexOffset;
 	sphereSubmesh.BaseVertexLocation = sphereVertexOffset;
-
-	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.f, 20, 20);
-	UINT cylinderVertexOffset = sphereVertexOffset + (UINT)sphere.Vertices.size();
-	UINT cylinderIndexOffset = sphereIndexOffset + (UINT)sphere.Indices32.size();
 
 	SubmeshGeometry cylinderSubmesh;
 	cylinderSubmesh.IndexCount = (UINT)cylinder.Indices32.size();
@@ -242,7 +240,7 @@ void ShapesApp::BuildShapeGeometry()
 	for (size_t i = 0; i < cylinder.Vertices.size(); ++i, ++k)
 	{
 		vertices[k].Pos = cylinder.Vertices[i].Position;
-		vertices[k].Color = DirectX::XMFLOAT4(DirectX::Colors::SteelBlue);
+		vertices[k].Color = DirectX::XMFLOAT4(DirectX::Colors::Chocolate);
 	}
 
 	std::vector<std::uint16_t> indices;
@@ -563,6 +561,28 @@ void ShapesApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(gridRitem));
 
 	UINT objCBIndex = 2;
+	int halfWidth = 100;
+	int halfHight = 100;
+	for (int i = 0; i < halfWidth * 2; i+=3)
+	{
+		for (int j = 0; j < halfHight * 2; j+=3)
+		{
+			auto CylRitem = std::make_unique<RenderItem>();
+			//XMMATRIX CylWorld = XMMatrixTranslation(-halfWidth + j, 0.f, halfHight - i);
+			XMStoreFloat4x4(&CylRitem->World, XMMatrixScaling(1.f, 10.f, 1.f) * XMMatrixTranslation(-halfWidth + j, 0.f, halfHight - i));
+			//XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(2.f, 2.f, 2.f) * XMMatrixTranslation(0.f, 0.5f, 0.0f));
+			CylRitem->ObjCBIndex = objCBIndex++;
+			CylRitem->Geo = mGeometries["shapeGeo"].get();
+			CylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+			CylRitem->IndexCount = CylRitem->Geo->DrawArgs["cylinder"].IndexCount;
+			CylRitem->StartIndexLocation = CylRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
+			CylRitem->BaseVertexLocation = CylRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+
+			mAllRitems.push_back(std::move(CylRitem));
+		}
+	}
+
+	/*UINT objCBIndex = 2;
 	for (int i = 0; i < 5; ++i)
 	{
 		auto leftCylRitem = std::make_unique<RenderItem>();
@@ -612,7 +632,7 @@ void ShapesApp::BuildRenderItems()
 		mAllRitems.push_back(std::move(rightCylRitem));
 		mAllRitems.push_back(std::move(leftSphereRitem));
 		mAllRitems.push_back(std::move(rightSphereRitem));
-	}
+	}*/
 
 	for (auto& e : mAllRitems)
 	{
@@ -640,7 +660,7 @@ void ShapesApp::BuildConstantBufferViews()
 {
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
-	UINT objCount = (UINT)mOpaqueRitems.size();
+	UINT objCount = (UINT)mAllRitems.size();
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
 	{
