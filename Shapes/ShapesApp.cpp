@@ -8,7 +8,7 @@
 using namespace DirectX;
 using namespace Microsoft::WRL;
 
-constexpr int gNumFrameResources = 3;
+static const int gNumFrameResources = 3;
 
 struct RenderItem
 {
@@ -31,7 +31,7 @@ struct RenderItem
 class ShapesApp : public d3dApp
 {
 public:
-	ShapesApp(HINSTANCE hInstance) : d3dApp(hInstance) {}
+	ShapesApp(HINSTANCE hInstance);
 	ShapesApp(const ShapesApp& rhs) = delete;
 	ShapesApp& operator=(const ShapesApp& rhs) = delete;
 	virtual ~ShapesApp();
@@ -178,35 +178,38 @@ void ShapesApp::UpdateCamera(const GameTimer& gt)
 void ShapesApp::BuildShapeGeometry()
 {
 	GeometryGenerator geoGen;
-	GeometryGenerator::MeshData box = geoGen.CreateBox(1.5f, 0.5f, 1.5f, 3);
-	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.f, 30.f, 60, 40);
-	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(.5f, 20, 20);
-	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.f, 20, 20);
-	
-	UINT boxVertexOffset = 0;
-	UINT gridVertexOffset = (UINT)box.Vertices.size();
-	UINT sphereVertexOffset = gridVertexOffset + (UINT)grid.Vertices.size();
-	UINT cylinderVertexOffset = sphereVertexOffset + (UINT)sphere.Vertices.size();
 
+	GeometryGenerator::MeshData box = geoGen.CreateBox(1.5f, 0.5f, 1.5f, 3);
+	UINT boxVertexOffset = 0;
 	UINT boxIndexOffset = 0;
-	UINT gridIndexOffset = (UINT)box.Indices32.size();
-	UINT sphereIndexOffset = gridIndexOffset + (UINT)grid.Indices32.size();
-	UINT cylinderIndexOffset = sphereIndexOffset + (UINT)sphere.Indices32.size();
 
 	SubmeshGeometry boxSubmesh;
 	boxSubmesh.IndexCount = (UINT)box.Indices32.size();
 	boxSubmesh.StartIndexLocation = boxIndexOffset;
 	boxSubmesh.BaseVertexLocation = boxVertexOffset;
 
+
+	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.f, 30.f, 60, 40);
+	UINT gridVertexOffset = (UINT)box.Vertices.size();
+	UINT gridIndexOffset = (UINT)box.Indices32.size();
+
 	SubmeshGeometry gridSubmesh;
 	gridSubmesh.IndexCount = (UINT)grid.Indices32.size();
 	gridSubmesh.StartIndexLocation = gridIndexOffset;
 	gridSubmesh.BaseVertexLocation = gridVertexOffset;
 
+	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(.5f, 20, 20);
+	UINT sphereVertexOffset = gridVertexOffset + (UINT)grid.Vertices.size();
+	UINT sphereIndexOffset = gridIndexOffset + (UINT)grid.Indices32.size();
+	
 	SubmeshGeometry sphereSubmesh;
 	sphereSubmesh.IndexCount = (UINT)sphere.Indices32.size();
 	sphereSubmesh.StartIndexLocation = sphereIndexOffset;
 	sphereSubmesh.BaseVertexLocation = sphereVertexOffset;
+
+	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.f, 20, 20);
+	UINT cylinderVertexOffset = sphereVertexOffset + (UINT)sphere.Vertices.size();
+	UINT cylinderIndexOffset = sphereIndexOffset + (UINT)sphere.Indices32.size();
 
 	SubmeshGeometry cylinderSubmesh;
 	cylinderSubmesh.IndexCount = (UINT)cylinder.Indices32.size();
@@ -346,6 +349,11 @@ void ShapesApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::v
 	}
 }
 
+ShapesApp::ShapesApp(HINSTANCE hInstance) : d3dApp(hInstance)
+{
+	mLastMousePos = POINT();
+}
+
 ShapesApp::~ShapesApp()
 {
 	if(md3dDevice != nullptr)
@@ -389,8 +397,12 @@ void ShapesApp::Update(const GameTimer& gt)
 	{
 		HANDLE eventHandle = CreateEventEx(nullptr, nullptr, false, EVENT_ALL_ACCESS);
 		ThrowIfFailed(mFence->SetEventOnCompletion(mCurrFrameResource->Fence, eventHandle));
-		WaitForSingleObject(eventHandle, INFINITE);
-		CloseHandle(eventHandle);
+		if (eventHandle)
+		{
+			//WaitForSingleObjectEx(eventHandle, INFINITE, true);
+			WaitForSingleObject(eventHandle, INFINITE);
+			CloseHandle(eventHandle);
+		}
 	}
 
 	UpdateObjectCBs(gt);
@@ -423,7 +435,7 @@ void ShapesApp::Draw(const GameTimer& gt)
 	mCommandList->ClearRenderTargetView(GetCurrentBackBufferView(),
 		DirectX::Colors::LightSteelBlue, 0, nullptr);
 	mCommandList->ClearDepthStencilView(GetDepthStencilView(),
-		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
+		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1, 0, 0, nullptr);
 	
 	auto BackBufferView = GetCurrentBackBufferView();
 	auto DSV = GetDepthStencilView();
@@ -548,7 +560,8 @@ void ShapesApp::BuildRenderItems()
 	gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
 	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
-	
+	mAllRitems.push_back(std::move(gridRitem));
+
 	UINT objCBIndex = 2;
 	for (int i = 0; i < 5; ++i)
 	{
