@@ -1,12 +1,12 @@
 ﻿#pragma once
 
 #include "d3dUtil.h"
-#include "GameTimer.h"
+#include "../Common/GameTimer.h"
+#include "../Common/MathHelper.h"
 
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
-
 
 class D3DApp
 {
@@ -26,20 +26,36 @@ public:
 	bool Get4xMsaaState() const;
 	void Set4xMsaaState(bool Value);
 
+	virtual bool Initialize();
 	int Run();
 
-	virtual bool Initialize();
 	virtual LRESULT CALLBACK MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+public:
+	bool mIsWireframe = false;
+
+	DirectX::XMFLOAT3 mEyePos = {0.f, 0.f, 0.f};
+	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
+
+	float mTheta = 1.5f* DirectX::XM_PI;
+	float mPhi = DirectX::XM_PIDIV2 - 0.1f;
+	float mRadius = 50.0f;
+
+	float mSunTheta = 1.25f* DirectX::XM_PI;
+	float mSunPhi = DirectX::XM_PIDIV4;
+
+	POINT mLastMousePos;
+	
 protected:
 	virtual void CreateRtvAndDsvDescriptorHeaps();
 	virtual void OnResize();
 	virtual void Update(const GameTimer& gt) = 0;
 	virtual void Draw(const GameTimer& gt) = 0;
 	
-	virtual void OnMouseDown(WPARAM btnState, int x, int y){}
-	virtual void OnMouseUp(WPARAM btnState, int x, int y)  {}
-	virtual void OnMouseMove(WPARAM btnState, int x, int y){}
+	virtual void OnMouseDown(WPARAM btnState, int x, int y);
+	virtual void OnMouseUp(WPARAM btnState, int x, int y);
+	virtual void OnMouseMove(WPARAM btnState, int x, int y);
 	
 	bool InitMainWindow();
 	bool InitDirect3D();

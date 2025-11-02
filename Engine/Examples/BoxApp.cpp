@@ -1,104 +1,16 @@
-﻿#pragma once
+﻿#include "BoxApp.h"
 
-#include "../Engine/D3D12/d3dApp.h"
-#include "../Engine/Common/MathHelper.h"
-#include "../Engine/Common/UploadBuffer.h"
-
-struct Vertex
-{
-    DirectX::XMFLOAT3 Pos;
-    DirectX::XMFLOAT4 Color;
-};
-
-struct VPosData
-{
-    DirectX::XMFLOAT3 pos;
-};
-
-struct VColorData
-{
-    DirectX::XMFLOAT4 Color;
-};
-
-struct VertexEx
-{
-	DirectX::XMFLOAT3 Pos;
-    DirectX::XMFLOAT4 Tangent;
-    DirectX::XMFLOAT3 Normal;
-    DirectX::XMFLOAT2 Tex0;
-    DirectX::XMFLOAT2 Tex1;
-    DirectX::PackedVector::XMCOLOR Color;
-};
-
-struct ObjectConstants
-{
-    DirectX::XMFLOAT4X4 WorldViewProjection = MathHelper::Identity4x4();
-    float gTime;
-};
-
-class Box : public d3dApp
-{
-public:
-    Box(HINSTANCE hInstance);
-    Box(const Box& rhs) = delete;
-    Box& operator=(const Box& rhs) = delete;
-    
-    virtual ~Box() override;
-    virtual bool Initialize() override;
-
-
-private:
-    virtual void OnResize() override;
-    virtual void Update(const GameTimer& gt) override;
-    virtual void Draw(const GameTimer& gt) override;
-
-    void BuildDescriptorHeaps();
-    void BuildConstantBuffers();
-    void BuildRootSignature();
-    void BuildShadersAndInputLayout();
-    void BuildBoxGeometry();
-    void BuildPSO();
-
-    virtual void OnMouseDown(WPARAM btnState, int x, int y) override;
-    virtual void OnMouseUp(WPARAM btnState, int x, int y) override;
-    virtual void OnMouseMove(WPARAM btnState, int x, int y) override;
-
-private:
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
-
-    std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
-
-    std::unique_ptr<MeshGeometry> mBoxGeo = nullptr;
-
-    Microsoft::WRL::ComPtr<ID3DBlob> mvsByteCode = nullptr;
-    Microsoft::WRL::ComPtr<ID3DBlob> mpsByteCode = nullptr;
-
-    std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
-
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> mPSO = nullptr;
-
-    DirectX::XMFLOAT4X4 mWorld = MathHelper::Identity4x4();
-    DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
-    DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
-
-    float mTheta = 1.5f * DirectX::XM_PI;
-    float mPhi = DirectX::XM_PIDIV4;
-    float mRadius = 5.f;
-
-    POINT mLastMousePos;    
-};
-Box::Box(HINSTANCE hInstance) : d3dApp(hInstance), mLastMousePos()
+BoxApp::BoxApp(HINSTANCE hInstance) : D3DApp(hInstance)
 {
 }
 
-Box::~Box()
+BoxApp::~BoxApp()
 {
 }
 
-bool Box::Initialize()
+bool BoxApp::Initialize()
 {
-    if (!d3dApp::Initialize())
+    if (!D3DApp::Initialize())
     {
         return false;
     }
@@ -123,15 +35,15 @@ bool Box::Initialize()
     return true;    
 }
 
-void Box::OnResize()
+void BoxApp::OnResize()
 {
-    d3dApp::OnResize();
+    D3DApp::OnResize();
 
-    DirectX::XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(0.25f * DirectX::XM_PI, GetAspectRatio(), 1.f, 1000.f);
+    DirectX::XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(0.25f * DirectX::XM_PI, AspectRatio(), 1.f, 1000.f);
     DirectX::XMStoreFloat4x4(&mProj, P);
 }
 
-void Box::Update(const GameTimer& gt)
+void BoxApp::Update(const GameTimer& gt)
 {
     // 구면 좌표를 직교좌표(데카르트좌표)로 변환
     float X = mRadius*sinf(mPhi)*cosf(mTheta);
@@ -146,7 +58,7 @@ void Box::Update(const GameTimer& gt)
     DirectX::XMStoreFloat4x4(&mView, View);
     
     //DirectX::XMMATRIX World = XMLoadFloat4x4(&mWorld);
-    DirectX::XMMATRIX BoxWorld = XMLoadFloat4x4(&mWorld);
+    DirectX::XMMATRIX BoxWorld = DirectX::XMMatrixIdentity();
 	DirectX::XMFLOAT4X4 P(
 		1.f, 0.f, 0.f, 0.f,
 		0.f, 1.f, 0.f, 0.f,
@@ -159,7 +71,7 @@ void Box::Update(const GameTimer& gt)
     //DirectX::XMMATRIX WorldViewProjection = World * View * Proj;
 
     // Update constant buffer
-    ObjectConstants ObjConstants;
+    Box::ObjectConstants ObjConstants;
     ObjConstants.gTime = mTimer.TotalTime();
 
 	DirectX::XMStoreFloat4x4(&ObjConstants.WorldViewProjection, DirectX::XMMatrixTranspose(BoxWorld * View * Proj));
@@ -169,7 +81,7 @@ void Box::Update(const GameTimer& gt)
     mObjectCB->CopyData(1, ObjConstants);
 }
 
-void Box::Draw(const GameTimer& gt)
+void BoxApp::Draw(const GameTimer& gt)
 {
     // 명령 기록에 관련된 메모리의 재활용을 위해 명령 할당자를 재설정.
     // 재설정은 GPU가 관련 명령 목록들을 모두 처리한 후에 일어남.
@@ -184,31 +96,25 @@ void Box::Draw(const GameTimer& gt)
 
     // 자원 용도에 관련된 상태 전이를 Direct3D에 통지.
     CD3DX12_RESOURCE_BARRIER rb = CD3DX12_RESOURCE_BARRIER::Transition(
-        GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+        CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
     mCommandList->ResourceBarrier(1, &rb);
 
-    mCommandList->ClearRenderTargetView(GetCurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
-    mCommandList->ClearDepthStencilView(GetDepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
+    mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
+    mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 
     // 렌더링 결과가 기록될 렌더 대상 버퍼들을 지정.
-    D3D12_CPU_DESCRIPTOR_HANDLE BackBufferView = GetCurrentBackBufferView();
-    D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView = GetDepthStencilView();
-    mCommandList->OMSetRenderTargets(1, &BackBufferView, true,  &DepthStencilView);
+    D3D12_CPU_DESCRIPTOR_HANDLE BackBufferView = CurrentBackBufferView();
+    D3D12_CPU_DESCRIPTOR_HANDLE dsv = DepthStencilView();
+    mCommandList->OMSetRenderTargets(1, &BackBufferView, true,  &dsv);
 
     ID3D12DescriptorHeap* DescriptorHeaps[] = {mCbvHeap.Get()};
     mCommandList->SetDescriptorHeaps(_countof(DescriptorHeaps), DescriptorHeaps);
     
     mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
-    //D3D12_VERTEX_BUFFER_VIEW Vbv = mBoxGeo->VertexBufferView();
-    //mCommandList->IASetVertexBuffers(0, 1, &Vbv);
+    D3D12_VERTEX_BUFFER_VIEW vbv = mBoxGeo->VertexBufferView();
+    mCommandList->IASetVertexBuffers(0, 1, &vbv);
     
-    D3D12_VERTEX_BUFFER_VIEW VPosView = mBoxGeo->VPosBufferView();
-    mCommandList->IASetVertexBuffers(0, 1, &VPosView);
-
-	D3D12_VERTEX_BUFFER_VIEW VColorView = mBoxGeo->VColorBufferView();
-	mCommandList->IASetVertexBuffers(1, 1, &VColorView);
-
     D3D12_INDEX_BUFFER_VIEW Ibv = mBoxGeo->IndexBufferView();
     mCommandList->IASetIndexBuffer(&Ibv);
 
@@ -236,7 +142,7 @@ void Box::Draw(const GameTimer& gt)
         0);
 
     rb = CD3DX12_RESOURCE_BARRIER::Transition(
-    GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+    CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
     mCommandList->ResourceBarrier(1, &rb);
     
     ThrowIfFailed(mCommandList->Close());
@@ -253,20 +159,20 @@ void Box::Draw(const GameTimer& gt)
     FlushCommandQueue();
 }
 
-void Box::BuildDescriptorHeaps()
+void BoxApp::BuildDescriptorHeaps()
 {
     D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc ={};
     cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     cbvHeapDesc.NodeMask = 0;
     cbvHeapDesc.NumDescriptors = 2;
-    ThrowIfFailed(mD3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
+    ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&mCbvHeap)));
 }
 
-void Box::BuildConstantBuffers()
+void BoxApp::BuildConstantBuffers()
 {
-	mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(mD3dDevice.Get(), 2, true);
-	UINT ObjCBByteSize = D3DUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	mObjectCB = std::make_unique<UploadBuffer<Box::ObjectConstants>>(md3dDevice.Get(), 2, true);
+	UINT ObjCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(Box::ObjectConstants));
 	
 	D3D12_GPU_VIRTUAL_ADDRESS cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
 	int boxCBufIndex = 0;
@@ -276,7 +182,7 @@ void Box::BuildConstantBuffers()
 	cbvDesc.BufferLocation = cbAddress;
     cbvDesc.SizeInBytes = ObjCBByteSize;
 	
-	mD3dDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart()); 
+	md3dDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart()); 
 	
 	int PyramidBufIndex = 1;
 	cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
@@ -286,10 +192,10 @@ void Box::BuildConstantBuffers()
 
     auto HeapHandle = mCbvHeap->GetCPUDescriptorHandleForHeapStart();
     HeapHandle.ptr += mCbvSrvUavDescriptorSize;
-    mD3dDevice->CreateConstantBufferView(&cbvDesc, HeapHandle);
+    md3dDevice->CreateConstantBufferView(&cbvDesc, HeapHandle);
 }
 
-void Box::BuildRootSignature()
+void BoxApp::BuildRootSignature()
 {
     CD3DX12_ROOT_PARAMETER slotRootParameter[1];
     CD3DX12_DESCRIPTOR_RANGE cbvTable;
@@ -314,19 +220,19 @@ void Box::BuildRootSignature()
     }
     ThrowIfFailed(hr);
 
-    ThrowIfFailed(mD3dDevice->CreateRootSignature(
+    ThrowIfFailed(md3dDevice->CreateRootSignature(
         0,
         serializeRootSignature->GetBufferPointer(),
         serializeRootSignature->GetBufferSize(),
         IID_PPV_ARGS(&mRootSignature)));
 }
 
-void Box::BuildShadersAndInputLayout()
+void BoxApp::BuildShadersAndInputLayout()
 {
     HRESULT hr = S_OK;
     
-    mvsByteCode = D3DUtil::CompileShader(L"Shaders/color.hlsl", nullptr, "VS", "vs_5_0");
-    mpsByteCode = D3DUtil::CompileShader(L"Shaders/color.hlsl", nullptr, "PS", "ps_5_0");
+    mvsByteCode = d3dUtil::CompileShader(L"Engine/Shaders/color.hlsl", nullptr, "VS", "vs_5_0");
+    mpsByteCode = d3dUtil::CompileShader(L"Engine/Shaders/color.hlsl", nullptr, "PS", "ps_5_0");
 
 	//mInputLayout =
 	//{
@@ -353,7 +259,7 @@ void Box::BuildShadersAndInputLayout()
 	};
 }
 
-void Box::BuildBoxGeometry()
+void BoxApp::BuildBoxGeometry()
 {
     //std::array<Vertex, 8> vertices =
     //{
@@ -367,42 +273,42 @@ void Box::BuildBoxGeometry()
     //    Vertex({ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Magenta) })
     //};
 
-    std::array<VPosData, 13> vertices =
+    std::array<Box::VPosData, 13> vertices =
     {
 		// 정육면체
-        VPosData({DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f)}),
-        VPosData({DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f)}),
-        VPosData({DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f)}),
-        VPosData({DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f)}),
-        VPosData({DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f)}),
-        VPosData({DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f)}),
-        VPosData({DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f)}),
-        VPosData({DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f)}),
+        Box::VPosData({DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f)}),
+        Box::VPosData({DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f)}),
+        Box::VPosData({DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f)}),
+        Box::VPosData({DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f)}),
+        Box::VPosData({DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f)}),
+        Box::VPosData({DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f)}),
+        Box::VPosData({DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f)}),
+        Box::VPosData({DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f)}),
 
         // 사각뿔
-        VPosData({DirectX::XMFLOAT3(-1.f, -0.f, -1.f)}),
-        VPosData({DirectX::XMFLOAT3(-1.f, +0.f, +1.f)}),
-        VPosData({DirectX::XMFLOAT3(+1.f, +0.f, +1.f)}),
-        VPosData({DirectX::XMFLOAT3(+1.f, -0.f, -1.f)}),
-        VPosData({DirectX::XMFLOAT3(+0.f,  +2.f, +0.f)}),
+        Box::VPosData({DirectX::XMFLOAT3(-1.f, -0.f, -1.f)}),
+        Box::VPosData({DirectX::XMFLOAT3(-1.f, +0.f, +1.f)}),
+        Box::VPosData({DirectX::XMFLOAT3(+1.f, +0.f, +1.f)}),
+        Box::VPosData({DirectX::XMFLOAT3(+1.f, -0.f, -1.f)}),
+        Box::VPosData({DirectX::XMFLOAT3(+0.f,  +2.f, +0.f)}),
     };
 
-    std::array<VColorData, 13> colors = 
+    std::array<Box::VColorData, 13> colors = 
     {
-		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
-		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
-		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
-		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
-		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
-		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
-		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
-		VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		Box::VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		Box::VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		Box::VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		Box::VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		Box::VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		Box::VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		Box::VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		Box::VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
 
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
-        VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+        Box::VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+        Box::VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+        Box::VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+        Box::VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+        Box::VColorData({DirectX::XMFLOAT4(DirectX::Colors::Red)}),
     };
 
     std::array<std::uint16_t, 54> indices =
@@ -435,57 +341,31 @@ void Box::BuildBoxGeometry()
 		1, 4, 0,
     };
 
-    //const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-    //const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
-
-    const UINT VPosByteSize = (UINT)vertices.size() * sizeof(VPosData);
-    const UINT VColorByteSize = (UINT)colors.size() * sizeof(VColorData);
+    const UINT vbByteSize = (UINT)vertices.size() * sizeof(Box::Vertex);
     const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
     mBoxGeo = std::make_unique<MeshGeometry>();
     mBoxGeo->Name = "boxGeo";
 
-    //ThrowIfFailed(D3DCreateBlob(vbByteSize, &mBoxGeo->VertexBufferCPU));
-    //CopyMemory(mBoxGeo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-    ThrowIfFailed(D3DCreateBlob(VPosByteSize, &mBoxGeo->VPosBufferCPU));
-    CopyMemory(mBoxGeo->VPosBufferCPU->GetBufferPointer(), vertices.data(), VPosByteSize);
-
-    ThrowIfFailed(D3DCreateBlob(VColorByteSize, &mBoxGeo->VColorBufferCPU));
-    CopyMemory(mBoxGeo->VColorBufferCPU->GetBufferPointer(), colors.data(), VColorByteSize);
-
+    ThrowIfFailed(D3DCreateBlob(vbByteSize, &mBoxGeo->VertexBufferCPU));
+    CopyMemory(mBoxGeo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+    
     ThrowIfFailed(D3DCreateBlob(ibByteSize, &mBoxGeo->IndexBufferCPU));
     CopyMemory(mBoxGeo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-    //mBoxGeo->VertexBufferGPU = D3DUtil::CreateDefaultBuffer(
-    //    mD3dDevice.Get(), mCommandList.Get(),
-    //    vertices.data(), vbByteSize,
-    //    mBoxGeo->VertexBufferUploader);
+    mBoxGeo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(
+        md3dDevice.Get(), mCommandList.Get(),
+        vertices.data(), vbByteSize,
+        mBoxGeo->VertexBufferUploader);
     
-	mBoxGeo->VPosBufferGPU = D3DUtil::CreateDefaultBuffer(
-		mD3dDevice.Get(), mCommandList.Get(),
-		vertices.data(), VPosByteSize,
-		mBoxGeo->VPosBufferUploader);
-
-    mBoxGeo->VColorBufferGPU = D3DUtil::CreateDefaultBuffer(
-        mD3dDevice.Get(), mCommandList.Get(),
-        colors.data(), VColorByteSize,
-        mBoxGeo->VColorBufferUploader);
-
-    mBoxGeo->IndexBufferGPU = D3DUtil::CreateDefaultBuffer(
-        mD3dDevice.Get(), mCommandList.Get(),
+    mBoxGeo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(
+        md3dDevice.Get(), mCommandList.Get(),
         indices.data(), ibByteSize,
         mBoxGeo->IndexBufferUploader);
 
-    //mBoxGeo->VertexByteStride = sizeof(VPosData) + sizeof(VColorData);
-    //mBoxGeo->VertexBufferByteSize = vbByteSize;
+    mBoxGeo->VertexByteStride = sizeof(Box::VPosData) + sizeof(Box::VColorData);
+    mBoxGeo->VertexBufferByteSize = vbByteSize;
     
-    mBoxGeo->VPosByteStride = sizeof(VPosData);
-    mBoxGeo->VPosBufferByteSize = VPosByteSize;
-
-    mBoxGeo->VColorByteStride = sizeof(VColorData);
-    mBoxGeo->VColorBufferByteSize = VColorByteSize;
-
     mBoxGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
     mBoxGeo->IndexBufferByteSize = ibByteSize;
 
@@ -512,7 +392,7 @@ void Box::BuildBoxGeometry()
     mBoxGeo->DrawArgs["Pyramid"] = PyramidMesh;
 }
 
-void Box::BuildPSO()
+void BoxApp::BuildPSO()
 {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
     ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
@@ -538,43 +418,5 @@ void Box::BuildPSO()
     psoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
     psoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
     psoDesc.DSVFormat = mDepthStencilFormat;
-    ThrowIfFailed(mD3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
-}
-
-void Box::OnMouseDown(WPARAM btnState, int x, int y)
-{
-    mLastMousePos.x = x;
-    mLastMousePos.y = y;
-
-    SetCapture(mhMainWnd);
-}
-
-void Box::OnMouseUp(WPARAM btnState, int x, int y)
-{
-    ReleaseCapture();
-}
-
-void Box::OnMouseMove(WPARAM btnState, int x, int y)
-{
-    if ((btnState & MK_LBUTTON) != 0)
-    {
-        float dx = DirectX::XMConvertToRadians(0.25f * static_cast<float>(x - mLastMousePos.x));
-        float dy = DirectX::XMConvertToRadians(0.25f * static_cast<float>(y - mLastMousePos.y));
-
-        mTheta += dx;
-        mPhi += dy;
-
-        mPhi = MathHelper::Clamp(mPhi, 0.1f, DirectX::XM_PI - 0.1f);
-    }
-    else if ((btnState & MK_RBUTTON) != 0)
-    {
-        float dx = 0.005f * static_cast<float>(x - mLastMousePos.x);
-        float dy = 0.005f * static_cast<float>(y - mLastMousePos.y);
-
-        mRadius += dx - dy;
-
-        mRadius = MathHelper::Clamp(mRadius, 3.f, 15.f);
-    }
-    mLastMousePos.x = x;
-    mLastMousePos.y = y;
+    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
 }

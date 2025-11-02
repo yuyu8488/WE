@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../Engine/D3D12/d3dApp.h"
-#include "../Engine/Common/GeometryGenerator.h"
-#include "../Engine/Common/FrameResource.h"
-#include "../Engine/Common/MathHelper.h"
+#include "../D3D12/d3dApp.h"
+#include "../Common/GeometryGenerator.h"
+#include "../Common/FrameResource.h"
+#include "../Common/MathHelper.h"
 
 using namespace DirectX;
 using namespace Microsoft::WRL;
@@ -28,25 +28,20 @@ struct RenderItem
 	UINT BaseVertexLocation = 0;
 };
 
-class ShapesApp : public d3dApp
+class ShapesApp : public D3DApp
 {
 public:
 	ShapesApp(HINSTANCE hInstance);
 	ShapesApp(const ShapesApp& rhs) = delete;
 	ShapesApp& operator=(const ShapesApp& rhs) = delete;
-	virtual ~ShapesApp();
+	virtual ~ShapesApp() override;
 
 	bool Initialize() override;
 
 private:
-	virtual void OnResize() override;
 	virtual void Update(const GameTimer& gt) override;
 	virtual void Draw(const GameTimer& gt) override;
-
-	virtual void OnMouseDown(WPARAM btnState, int x, int y) override;
-	virtual void OnMouseUp(WPARAM btnState, int x, int y) override;
-	virtual void OnMouseMove(WPARAM btnState, int x, int y) override;
-
+	
 	void OnKeyboardInput(const GameTimer& gt);
 	void UpdateCamera(const GameTimer& gt);	
 	void UpdateObjectCBs(const GameTimer& gt);
@@ -83,82 +78,12 @@ private:
 	PassConstants mMainPassCB;
 
 	UINT mPassCbvOffset = 0;
-	
-	bool mIsWireFrame = false;
-	DirectX::XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
-	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
-
-	float mTheta  = 1.5f*XM_PI;
-	float mPhi    = 0.2f*XM_PI;
-	float mRadius = 15.f;
-
-	POINT mLastMousePos;
 };
-
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
-{
-	// Enable run-time memory check for debug builds.
-#if defined(DEBUG) | defined(_DEBUG)
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-#endif
-
-	try
-	{
-		ShapesApp theApp(hInstance);
-		if(!theApp.Initialize())
-			return 0;
-
-		return theApp.Run();
-	}
-	catch(DxException& e)
-	{
-		MessageBox(nullptr, e.ToString().c_str(), L"HR Failed", MB_OK);
-		return 0;
-	}
-}
-
-void ShapesApp::OnMouseDown(WPARAM btnState, int x, int y)
-{
-	mLastMousePos.x = x;
-	mLastMousePos.y = y;
-
-	SetCapture(mhMainWnd);
-}
-
-void ShapesApp::OnMouseUp(WPARAM btnState, int x, int y)
-{
-	ReleaseCapture();
-}
-
-void ShapesApp::OnMouseMove(WPARAM btnState, int x, int y)
-{
-	if ((btnState & MK_LBUTTON) != 0)
-	{
-		float dx = XMConvertToRadians(0.25f*static_cast<float>(x-mLastMousePos.x));
-		float dy = XMConvertToRadians(0.25f*static_cast<float>(y-mLastMousePos.y));
-
-		mTheta += dx;
-		mPhi  += dy;
-		mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
-	}
-	else if ((btnState & MK_RBUTTON) != 0)
-	{
-		float dx = 0.05f*static_cast<float>(x - mLastMousePos.x);
-		float dy = 0.05f*static_cast<float>(y - mLastMousePos.y);
-
-		mRadius += dx - dy;
-		mRadius = MathHelper::Clamp(mRadius, 0.1f, 150.f);
-	}
-
-	mLastMousePos.x = x;
-	mLastMousePos.y = y;
-}
 
 void ShapesApp::OnKeyboardInput(const GameTimer& gt)
 {
 	if (GetAsyncKeyState('1') & 0x8000)
-		mIsWireFrame = !mIsWireFrame;
+		mIsWireframe = !mIsWireframe;
 }
 
 void ShapesApp::UpdateCamera(const GameTimer& gt)
@@ -347,7 +272,7 @@ void ShapesApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::v
 	}
 }
 
-ShapesApp::ShapesApp(HINSTANCE hInstance) : d3dApp(hInstance)
+ShapesApp::ShapesApp(HINSTANCE hInstance) : D3DApp(hInstance)
 {
 	mLastMousePos = POINT();
 }
@@ -360,7 +285,7 @@ ShapesApp::~ShapesApp()
 
 bool ShapesApp::Initialize()
 {
-	if (!d3dApp::Initialize())
+	if (!D3DApp::Initialize())
 		return false;
 
 	ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
@@ -413,7 +338,7 @@ void ShapesApp::Draw(const GameTimer& gt)
 	
 	ThrowIfFailed(cmdListAlloc->Reset());
 	
-	if (mIsWireFrame)
+	if (mIsWireframe)
 	{
 		ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mPSOs["opaque_wireframe"].Get()));
 	}
@@ -425,18 +350,18 @@ void ShapesApp::Draw(const GameTimer& gt)
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
-	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(GetCurrentBackBuffer(),
+	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
 		D3D12_RESOURCE_STATE_PRESENT,
 		D3D12_RESOURCE_STATE_RENDER_TARGET);
 	mCommandList->ResourceBarrier(1, &barrier);
 
-	mCommandList->ClearRenderTargetView(GetCurrentBackBufferView(),
+	mCommandList->ClearRenderTargetView(CurrentBackBufferView(),
 		DirectX::Colors::LightSteelBlue, 0, nullptr);
-	mCommandList->ClearDepthStencilView(GetDepthStencilView(),
+	mCommandList->ClearDepthStencilView(DepthStencilView(),
 		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1, 0, 0, nullptr);
 	
-	auto BackBufferView = GetCurrentBackBufferView();
-	auto DSV = GetDepthStencilView();
+	auto BackBufferView = CurrentBackBufferView();
+	auto DSV = DepthStencilView();
 	mCommandList->OMSetRenderTargets(1, &BackBufferView, true, &DSV);
 
 	ID3D12DescriptorHeap* descriptorHeap[] = { mCbvHeap.Get() };
@@ -452,7 +377,7 @@ void ShapesApp::Draw(const GameTimer& gt)
 	DrawRenderItems(mCommandList.Get(), mOpaqueRitems);
 
 	auto barrier2 = CD3DX12_RESOURCE_BARRIER::Transition(
-		GetCurrentBackBuffer(),
+		CurrentBackBuffer(),
 		D3D12_RESOURCE_STATE_RENDER_TARGET,
 		D3D12_RESOURCE_STATE_PRESENT);
 	mCommandList->ResourceBarrier(1, &barrier2);
@@ -467,15 +392,6 @@ void ShapesApp::Draw(const GameTimer& gt)
 
 	mCurrFrameResource->Fence = ++mCurrentFence;
 	mCommandQueue->Signal(mFence.Get(), mCurrentFence);
-}
-
-void ShapesApp::OnResize()
-{
-	d3dApp::OnResize();
-
-	// The window resized, so update the aspect ratio and recompute the projection matrix.
-	DirectX::XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(0.25f * MathHelper::Pi, d3dApp::GetAspectRatio(), 1.0f, 1000.0f);
-	XMStoreFloat4x4(&mProj, P);
 }
 
 void ShapesApp::UpdateObjectCBs(const GameTimer& gt)
@@ -560,9 +476,11 @@ void ShapesApp::BuildRenderItems()
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 	mAllRitems.push_back(std::move(gridRitem));
 
+
 	UINT objCBIndex = 2;
 	int halfWidth = 100;
 	int halfHight = 100;
+	
 	for (int i = 0; i < halfWidth * 2; i+=3)
 	{
 		for (int j = 0; j < halfHight * 2; j+=3)
