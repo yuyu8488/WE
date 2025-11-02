@@ -4,6 +4,7 @@
     <attachedFolders />
     <explicitIncludes />
     <explicitExcludes>
+      <Path>Shaders/LandAndWaves.hlsl</Path>
       <Path>Shaders/color.hlsl</Path>
     </explicitExcludes>
   </component>

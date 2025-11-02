@@ -1,7 +1,7 @@
 ﻿#include "d3dApp.h"
 #include <WindowsX.h>
 
-d3dApp* d3dApp::mApp = nullptr;
+D3DApp* D3DApp::mApp = nullptr;
 
 using Microsoft::WRL::ComPtr;
 using namespace std;
@@ -9,17 +9,17 @@ using namespace DirectX;
 
 LRESULT CALLBACK MainWndProc(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam)
 {
-    return d3dApp::GetApp()->MsgProc(WindowHandle, Message, WParam, LParam);
+    return D3DApp::GetApp()->MsgProc(WindowHandle, Message, WParam, LParam);
 }
 
 
-d3dApp::d3dApp(HINSTANCE hInstance) : mhAppInst(hInstance)
+D3DApp::D3DApp(HINSTANCE hInstance) : mhAppInst(hInstance)
 {
     assert(mApp == nullptr);
     mApp = this;
 }
 
-d3dApp::~d3dApp()
+D3DApp::~D3DApp()
 {
     if (md3dDevice != nullptr)
     {
@@ -27,32 +27,32 @@ d3dApp::~d3dApp()
     }
 }
 
-d3dApp* d3dApp::GetApp()
+D3DApp* D3DApp::GetApp()
 {
     return mApp;
 }
 
-HINSTANCE d3dApp::GetAppInstance() const
+HINSTANCE D3DApp::AppInstance() const
 {
     return mhAppInst;
 }
 
-HWND d3dApp::GetMainWindow() const
+HWND D3DApp::MainWindow() const
 {
     return mhMainWnd;
 }
 
-float d3dApp::GetAspectRatio() const
+float D3DApp::AspectRatio() const
 {
     return (float)(mClientWidth) / (float)(mClientHeight);
 }
 
-bool d3dApp::Get4xMsaaState() const
+bool D3DApp::Get4xMsaaState() const
 {
     return m4xMsaaState;
 }
 
-void d3dApp::Set4xMsaaState(bool Value)
+void D3DApp::Set4xMsaaState(bool Value)
 {
     if (m4xMsaaState != Value)
     {
@@ -63,7 +63,7 @@ void d3dApp::Set4xMsaaState(bool Value)
     }
 }
 
-int d3dApp::Run()
+int D3DApp::Run()
 {
     MSG Msg = {nullptr};
 
@@ -96,7 +96,7 @@ int d3dApp::Run()
     return (int)Msg.wParam;
 }
 
-bool d3dApp::Initialize()
+bool D3DApp::Initialize()
 {
     if (!InitMainWindow())
     {
@@ -113,7 +113,7 @@ bool d3dApp::Initialize()
     return true;
 }
 
-LRESULT d3dApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT D3DApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg)
     {
@@ -210,7 +210,7 @@ LRESULT d3dApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-void d3dApp::CreateRtvAndDsvDescriptorHeaps()
+void D3DApp::CreateRtvAndDsvDescriptorHeaps()
 {
     D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
     rtvHeapDesc.NumDescriptors = SwapChainBufferCount;
@@ -227,7 +227,7 @@ void d3dApp::CreateRtvAndDsvDescriptorHeaps()
     md3dDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(mDsvHeap.GetAddressOf()));
 }
 
-void d3dApp::OnResize()
+void D3DApp::OnResize()
 {
     assert(md3dDevice);
     assert(mSwapChain);
@@ -294,7 +294,7 @@ void d3dApp::OnResize()
     DepthStencilViewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
     DepthStencilViewDesc.Format = mDepthStencilFormat;
     DepthStencilViewDesc.Texture2D.MipSlice = 0;
-    md3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &DepthStencilViewDesc, GetDepthStencilView());
+    md3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &DepthStencilViewDesc, DepthStencilView());
 
     CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(mDepthStencilBuffer.Get(), 
         D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
@@ -316,7 +316,7 @@ void d3dApp::OnResize()
     mScissorRect = { 0,0,mClientWidth,mClientHeight };
 }
 
-bool d3dApp::InitMainWindow()
+bool D3DApp::InitMainWindow()
 {
     WNDCLASS WC;
     WC.style = CS_HREDRAW | CS_VREDRAW;
@@ -356,7 +356,7 @@ bool d3dApp::InitMainWindow()
     return true;
 }
 
-void d3dApp::FlushCommandQueue()
+void D3DApp::FlushCommandQueue()
 {
     mCurrentFence++;
 
@@ -375,12 +375,12 @@ void d3dApp::FlushCommandQueue()
     }
 }
 
-ID3D12Resource* d3dApp::GetCurrentBackBuffer() const
+ID3D12Resource* D3DApp::CurrentBackBuffer() const
 {
     return mSwapChainBuffer[mCurrBackBuffer].Get();
 }
 
-bool d3dApp::InitDirect3D()
+bool D3DApp::InitDirect3D()
 {
 #if defined(DEBUG) || defined(_DEBUG)
 {
@@ -438,7 +438,7 @@ bool d3dApp::InitDirect3D()
     return true;
 }
 
-void d3dApp::CreateCommandObjects()
+void D3DApp::CreateCommandObjects()
 {
     D3D12_COMMAND_QUEUE_DESC QueueDesc = {};
     QueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -456,7 +456,7 @@ void d3dApp::CreateCommandObjects()
     mCommandList->Close();
 }
 
-void d3dApp::CreateSwapChain()
+void D3DApp::CreateSwapChain()
 {
     mSwapChain.Reset();
 
@@ -480,17 +480,17 @@ void d3dApp::CreateSwapChain()
     ThrowIfFailed(mDxgiFactory->CreateSwapChain(mCommandQueue.Get(), &SD, mSwapChain.GetAddressOf()));
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE d3dApp::GetCurrentBackBufferView() const
+D3D12_CPU_DESCRIPTOR_HANDLE D3DApp::CurrentBackBufferView() const
 {
     return CD3DX12_CPU_DESCRIPTOR_HANDLE(mRtvHeap->GetCPUDescriptorHandleForHeapStart(), mCurrBackBuffer, mRtvDescriptorSize);
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE d3dApp::GetDepthStencilView() const
+D3D12_CPU_DESCRIPTOR_HANDLE D3DApp::DepthStencilView() const
 {
     return mDsvHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
-void d3dApp::CalculateFrameStats()
+void D3DApp::CalculateFrameStats()
 {
     static int FrameCount = 0;
     static float TimeElapsed = 0.f;
@@ -513,7 +513,7 @@ void d3dApp::CalculateFrameStats()
     }
 }
 
-void d3dApp::LogAdapters()
+void D3DApp::LogAdapters()
 {
     UINT i = 0;
     IDXGIAdapter* Adapter = nullptr;
@@ -541,10 +541,10 @@ void d3dApp::LogAdapters()
     }
 }
 
-void d3dApp::LogAdapterOutputs(IDXGIAdapter* Adapter)
+void D3DApp::LogAdapterOutputs(IDXGIAdapter* Adapter)
 {
 }
 
-void d3dApp::LogOutputDisplayModes(IDXGIOutput* Output, DXGI_FORMAT Format)
+void D3DApp::LogOutputDisplayModes(IDXGIOutput* Output, DXGI_FORMAT Format)
 {
 }

@@ -101,7 +101,7 @@
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
+      <ConformanceMode>Default</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -200,12 +200,13 @@
       <LinkCompiled>true</LinkCompiled>
     </ClCompile>
     <ClCompile Include="Engine\Common\MathHelper.cpp" />
+    <ClCompile Include="Engine\Common\Waves.cpp" />
     <ClCompile Include="Engine\D3D12\d3dApp.cpp" />
     <ClCompile Include="Engine\D3D12\d3dUtil.cpp" />
     <ClCompile Include="Engine\D3D12\GameTimer.cpp" />
     <ClCompile Include="Engine\Common\FrameResource.cpp" />
     <ClCompile Include="Examples\LandAndWavesApp.cpp" />
-    <ClCompile Include="Shapes\ShapesApp.cpp" />
+    <CustomBuild Include="Shaders\LandAndWaves.hlsl" />
     <ClInclude Include="Engine\Common\FrameResource.h" />
     <ClInclude Include="Engine\Common\GeometryGenerator.h" />
     <CustomBuild Include="Shaders\color.hlsl">
@@ -214,6 +215,7 @@
     </CustomBuild>
     <ClInclude Include="Engine\Common\MathHelper.h" />
     <ClInclude Include="Engine\Common\UploadBuffer.h" />
+    <ClInclude Include="Engine\Common\Waves.h" />
     <ClInclude Include="Engine\D3D12\d3dApp.h" />
     <ClInclude Include="Engine\D3D12\d3dUtil.h" />
     <ClInclude Include="Engine\D3D12\d3dx12.h" />

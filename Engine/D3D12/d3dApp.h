@@ -8,20 +8,20 @@
 #pragma comment(lib, "dxgi.lib")
 
 
-class d3dApp
+class D3DApp
 {
 protected:
-	d3dApp(HINSTANCE hInstance);
-	d3dApp(const d3dApp& rhs) = delete;
-	d3dApp& operator=(const d3dApp& rhs) = delete;
-	virtual ~d3dApp();
+	D3DApp(HINSTANCE hInstance);
+	D3DApp(const D3DApp& rhs) = delete;
+	D3DApp& operator=(const D3DApp& rhs) = delete;
+	virtual ~D3DApp();
 
 public:
-	static d3dApp* GetApp();
+	static D3DApp* GetApp();
 
-	HINSTANCE GetAppInstance() const;
-	HWND GetMainWindow() const;
-	float GetAspectRatio() const;
+	HINSTANCE AppInstance() const;
+	HWND MainWindow() const;
+	float AspectRatio() const;
 
 	bool Get4xMsaaState() const;
 	void Set4xMsaaState(bool Value);
@@ -48,9 +48,9 @@ protected:
 	
 	void FlushCommandQueue();
 
-	ID3D12Resource* GetCurrentBackBuffer() const;
-	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentBackBufferView() const;
-	D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilView() const;
+	ID3D12Resource* CurrentBackBuffer() const;
+	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const;
+	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const;
 
 	void CalculateFrameStats();
 
@@ -61,7 +61,7 @@ protected:
 	//***************************************************************************************
 	// Member variables
 	//***************************************************************************************
-	static d3dApp* mApp;
+	static D3DApp* mApp;
 
 	HINSTANCE mhAppInst = nullptr;
 	HWND mhMainWnd = nullptr;

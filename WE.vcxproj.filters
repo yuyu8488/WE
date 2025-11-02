@@ -33,10 +33,10 @@
     <ClCompile Include="Engine\D3D12\d3dUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Shapes\ShapesApp.cpp">
+    <ClCompile Include="Examples\LandAndWavesApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Examples\LandAndWavesApp.cpp">
+    <ClCompile Include="Engine\Common\Waves.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -63,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Engine\D3D12\d3dUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Common\Waves.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

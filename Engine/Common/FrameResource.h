@@ -37,14 +37,19 @@ struct FrameResource
 {
 public:
 	FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount);
+	FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT waveVertexCount);
 	FrameResource(const FrameResource& rhs) = delete;
 	FrameResource& operator=(const FrameResource& rhs) = delete;
 	~FrameResource();
 
+	// We cannot reset the (allocator / cbuffer / dynamic vertex buffer) until the GPU is done processing the commands.
+	// So each frame needs their own (allocator / cbuffer / dynamic vertex buffer).
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CmdListAlloc;
-
+	
 	std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
 	std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
+	
+	std::unique_ptr<UploadBuffer<Vertex>> WavesVB = nullptr;
 
 	UINT64 Fence = 0;
 };
