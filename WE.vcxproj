@@ -123,9 +123,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Core\Actor.cpp" />
-    <ClCompile Include="Core\Component.cpp" />
-    <ClCompile Include="Core\World.cpp" />
     <ClCompile Include="Engine\Common\GameTimer.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -285,9 +282,7 @@
     <ClCompile Include="Engine\Common\FrameResource.cpp" />
     <ClCompile Include="Engine\Examples\LandAndWavesApp.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClInclude Include="Core\Actor.h" />
-    <ClInclude Include="Core\Component.h" />
-    <ClInclude Include="Core\World.h" />
+    <ClCompile Include="Game\World.cpp" />
     <ClInclude Include="Engine\Common\FrameResource.h" />
     <ClInclude Include="Engine\Common\GameTimer.h" />
     <ClInclude Include="Engine\Common\GeometryGenerator.h" />
@@ -298,6 +293,7 @@
     <ClInclude Include="Engine\D3D12\d3dUtil.h" />
     <ClInclude Include="Engine\D3D12\d3dx12.h" />
     <ClInclude Include="Engine\Examples\LandAndWavesApp.h" />
+    <ClInclude Include="Game\World.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

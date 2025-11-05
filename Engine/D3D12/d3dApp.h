@@ -8,6 +8,7 @@
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 
+
 class D3DApp
 {
 protected:

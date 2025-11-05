@@ -23,6 +23,8 @@
 
 #include "d3dx12.h"
 
+constexpr int gNumFrameResources = 3; // Config
+
 inline std::wstring AnsiToWString(const std::string& str)
 {
 	WCHAR buffer[512];
@@ -135,6 +137,22 @@ struct MeshGeometry
 		VertexBufferUploader = nullptr;
 		IndexBufferUploader = nullptr;
 	}
+};
+
+struct Material
+{
+	std::string Name;
+
+	int MatCBIndex = -1;
+
+	int DiffuseSrvHeapIndex = -1;
+
+	int NumFramesDirty = gNumFrameResources;
+
+	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.f, 1.f, 1.f, 1.f };
+	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
+	float Roughness = 0.25f;
+	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
 };
 
 #ifndef ThrowIfFailed
