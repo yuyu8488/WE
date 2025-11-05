@@ -1,6 +1,6 @@
 #pragma once
 
-#include "..\D3D12\d3dUtil.h"
+#include "../D3D12/d3dUtil.h"
 #include "MathHelper.h"
 #include "UploadBuffer.h"
 
@@ -25,12 +25,20 @@ struct PassConstants
 	float FarZ = 0.0f;
 	float TotalTime = 0.0f;
 	float DeltaTime = 0.0f;
+
+	DirectX::XMFLOAT4 AmbientLight = {0.f, 0.f, 0.f ,1.f};
+
+	// Indices [0, NUM_DIR_LIGHTS) are directional lights;
+	// indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS) are point lights;
+	// indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
+	// are spot lights for a maximum of MaxLights per object.
+	Light Lights[MaxLights];
 };
 
 struct Vertex
 {
 	DirectX::XMFLOAT3 Pos;
-	DirectX::XMFLOAT4 Color;
+	DirectX::XMFLOAT4 Normal;
 };
 
 struct FrameResource
@@ -45,11 +53,16 @@ public:
 	// We cannot reset the (allocator / cbuffer / dynamic vertex buffer) until the GPU is done processing the commands.
 	// So each frame needs their own (allocator / cbuffer / dynamic vertex buffer).
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CmdListAlloc;
-	
+
+	// We cannot update a cbuffer until the GPU is done processing the commands
+	// that reference it.  So each frame needs their own cbuffers.
 	std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
+	std::unique_ptr<UploadBuffer<MaterialConstants>> MaterialCB = nullptr;
 	std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
 	
 	std::unique_ptr<UploadBuffer<Vertex>> WavesVB = nullptr;
 
+	// Fence value to mark commands up to this fence point.  This lets us
+	// check if these frame resources are still in use by the GPU.
 	UINT64 Fence = 0;
 };
