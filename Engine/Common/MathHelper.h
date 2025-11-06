@@ -49,6 +49,18 @@ public:
 		return Value < Min ? Min : (Value > Max ? Max : Value);
 	}
 
+	// Return the polar angle of the point (x,y) in [0, 2*PI).
+	static float AngleFromXY(float x, float y);
+
+	static DirectX::XMVECTOR SphericalToCartesian(float radius, float theta, float phi)
+	{
+		return DirectX::XMVectorSet(
+			radius * sinf(phi) * cosf(theta),
+			radius * cosf(phi),
+			radius * sinf(phi) * sinf(theta),
+			1.f);
+	}
+
     static DirectX::XMFLOAT4X4 Identity4x4()
 	{
 		static DirectX::XMFLOAT4X4 I(
