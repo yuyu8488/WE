@@ -21,7 +21,7 @@
 #include <cassert>
 #include "d3dx12.h"
 
-#include "../Common/MathHelper.h"
+#include "MathHelper.h"
 
 extern const int gNumFrameResources;
 

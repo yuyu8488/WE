@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include "d3dUtil.h"
-#include "../Common/GameTimer.h"
-#include "../Common/MathHelper.h"
+#include "GameTimer.h"
+#include "MathHelper.h"
 
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "d3d12.lib")

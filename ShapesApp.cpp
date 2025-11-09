@@ -1,9 +1,9 @@
-#pragma once
+﻿#pragma once
 
-#include "../D3D12/d3dApp.h"
-#include "../Common/GeometryGenerator.h"
-#include "../Common/FrameResource.h"
-#include "../Common/MathHelper.h"
+#include "d3dApp.h"
+#include "GeometryGenerator.h"
+#include "FrameResource.h"
+#include "MathHelper.h"
 
 using namespace DirectX;
 using namespace Microsoft::WRL;

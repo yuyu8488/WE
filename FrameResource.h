@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "../D3D12/d3dUtil.h"
+#include "d3dUtil.h"
 #include "MathHelper.h"
 #include "UploadBuffer.h"
 

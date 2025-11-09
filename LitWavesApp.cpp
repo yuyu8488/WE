@@ -1,11 +1,11 @@
 ﻿#pragma once
 
 #include <DirectXMath.h>
-#include "../D3D12/d3dApp.h"
-#include "../Common/Waves.h"
-#include "../Common/GeometryGenerator.h"
-#include "../Common/MathHelper.h"
-#include "../Common/FrameResource.h"
+#include "d3dApp.h"
+#include "Waves.h"
+#include "GeometryGenerator.h"
+#include "MathHelper.h"
+#include "FrameResource.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
