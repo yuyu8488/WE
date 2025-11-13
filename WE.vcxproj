@@ -128,8 +128,8 @@
     <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="GameTimer.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
-    <ClCompile Include="LitWavesApp.cpp" />
     <ClCompile Include="MathHelper.cpp" />
+    <ClCompile Include="ShapesApp.cpp" />
     <ClCompile Include="Waves.cpp" />
     <ClInclude Include="d3dApp.h" />
     <ClInclude Include="d3dUtil.h" />

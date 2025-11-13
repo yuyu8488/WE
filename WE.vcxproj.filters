@@ -48,8 +48,8 @@
     <ClCompile Include="d3dApp.cpp">
       <Filter>Source Files\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="LitWavesApp.cpp">
-      <Filter>Source Files\Examples</Filter>
+    <ClCompile Include="ShapesApp.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

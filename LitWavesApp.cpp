@@ -459,7 +459,7 @@ void LitWavesApp::UpdateMainPassCB(const GameTimer& gt)
 
 	XMStoreFloat3(&mMainPassCB.Lights[0].Direction, lightDir);
 	
-	mMainPassCB.Lights[0].Strength = { OnOffLight(gt), 0.0f, 0.0f };
+	mMainPassCB.Lights[0].Strength = { 1.f, 1.0f, 1.0f };
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
@@ -702,7 +702,7 @@ void LitWavesApp::BuildMaterials()
 	auto grass = std::make_unique<Material>();
 	grass->Name = "grass";
 	grass->MatCBIndex = 0;
-	grass->DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f);
+	grass->DiffuseAlbedo = XMFLOAT4(0.4f, 0.6f, 0.2f, 1.0f);
 	grass->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	grass->Roughness = 0.125f;
 
@@ -713,7 +713,7 @@ void LitWavesApp::BuildMaterials()
 	water->MatCBIndex = 1;
 	water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
 	water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	water->Roughness = 0.0f;
+	water->Roughness = 0.8f;
 
 	mMaterials["grass"] = std::move(grass);
 	mMaterials["water"] = std::move(water);
@@ -799,5 +799,5 @@ XMFLOAT3 LitWavesApp::GetHillsNormal(float x, float z)const
 
 float LitWavesApp::OnOffLight(const GameTimer& gt)
 {
-	return sinf(5.f * gt.TotalTime());
+	return sinf(10.f * gt.TotalTime());
 }
