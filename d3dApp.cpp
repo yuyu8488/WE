@@ -12,7 +12,6 @@ LRESULT CALLBACK MainWndProc(HWND WindowHandle, UINT Message, WPARAM WParam, LPA
     return D3DApp::GetApp()->MsgProc(WindowHandle, Message, WParam, LParam);
 }
 
-
 D3DApp::D3DApp(HINSTANCE hInstance) : mhAppInst(hInstance)
 {
     assert(mApp == nullptr);
@@ -489,7 +488,6 @@ void D3DApp::CreateCommandObjects()
     QueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
     QueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
     ThrowIfFailed(md3dDevice->CreateCommandQueue(&QueueDesc, IID_PPV_ARGS(&mCommandQueue)));
-   
     ThrowIfFailed(md3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(mDirectCmdListAlloc.GetAddressOf())));
     ThrowIfFailed(md3dDevice->CreateCommandList(
         0,

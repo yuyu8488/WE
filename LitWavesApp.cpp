@@ -95,8 +95,9 @@ private:
 	float GetHillsHeight(float x, float z)const;
 	XMFLOAT3 GetHillsNormal(float x, float z)const;
 
+	float OnOffLight(const GameTimer& gt);
+	
 private:
-
 	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
 	FrameResource* mCurrFrameResource = nullptr;
 	int mCurrFrameResourceIndex = 0;
@@ -137,7 +138,9 @@ private:
 	float mSunPhi = XM_PIDIV4;
 
 	POINT mLastMousePos;
+
 };
+
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	PSTR cmdLine, int showCmd)
@@ -455,7 +458,8 @@ void LitWavesApp::UpdateMainPassCB(const GameTimer& gt)
 	XMVECTOR lightDir = -MathHelper::SphericalToCartesian(1.0f, mSunTheta, mSunPhi);
 
 	XMStoreFloat3(&mMainPassCB.Lights[0].Direction, lightDir);
-	mMainPassCB.Lights[0].Strength = { 1.0f, 1.0f, 0.9f };
+	
+	mMainPassCB.Lights[0].Strength = { OnOffLight(gt), 0.0f, 0.0f };
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
@@ -791,4 +795,9 @@ XMFLOAT3 LitWavesApp::GetHillsNormal(float x, float z)const
 	XMStoreFloat3(&n, unitNormal);
 
 	return n;
+}
+
+float LitWavesApp::OnOffLight(const GameTimer& gt)
+{
+	return sinf(5.f * gt.TotalTime());
 }

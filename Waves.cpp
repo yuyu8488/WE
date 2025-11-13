@@ -79,7 +79,7 @@ float Waves::Depth() const
 
 void Waves::Update(float dt)
 {
-    	static float t = 0;
+    static float t = 0;
 
 	// Accumulate time.
 	t += dt;
