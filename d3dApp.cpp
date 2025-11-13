@@ -305,6 +305,9 @@ void D3DApp::OnResize()
 
     FlushCommandQueue();
 
+    XMMATRIX P = XMMatrixPerspectiveFovLH(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+    XMStoreFloat4x4(&mProj, P);
+
     mScreenViewport.TopLeftX = 0;
     mScreenViewport.TopLeftY = 0;
     mScreenViewport.Width = static_cast<float>(mClientWidth);

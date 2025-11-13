@@ -146,7 +146,6 @@ void ShapesApp::BuildShapeGeometry()
 	UINT sphereIndexOffset = gridIndexOffset + (UINT)grid.Indices32.size();
 	UINT cylinderIndexOffset = sphereIndexOffset + (UINT)sphere.Indices32.size();
 
-
 	SubmeshGeometry boxSubmesh;
 	boxSubmesh.IndexCount = (UINT)box.Indices32.size();
 	boxSubmesh.StartIndexLocation = boxIndexOffset;
@@ -175,22 +174,25 @@ void ShapesApp::BuildShapeGeometry()
 	for (size_t i = 0; i < box.Vertices.size(); i++, ++k) 
 	{
 		vertices[k].Pos = box.Vertices[i].Position;
+		vertices[k].Normal = box.Vertices[i].Normal;
 	}
 
 	for (size_t i = 0; i < grid.Vertices.size(); i++, ++k)
 	{
 		vertices[k].Pos = grid.Vertices[i].Position;
+		vertices[k].Normal = grid.Vertices[i].Normal;
 	}
 
 	for (size_t i = 0; i < sphere.Vertices.size(); i++, ++k)
 	{
 		vertices[k].Pos = sphere.Vertices[i].Position;
+		vertices[k].Normal = sphere.Vertices[i].Normal;
 	}
 
 	for (size_t i = 0; i < cylinder.Vertices.size(); ++i, ++k)
 	{
 		vertices[k].Pos = cylinder.Vertices[i].Position;
-
+		vertices[k].Normal = cylinder.Vertices[i].Normal;
 	}
 
 	std::vector<std::uint16_t> indices;
@@ -327,8 +329,8 @@ bool ShapesApp::Initialize()
 	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
-	BuildDescriptorHeaps();
-	BuildConstantBufferViews();
+	//BuildDescriptorHeaps();
+	//BuildConstantBufferViews();
 	BuildPSOs();
 
 	ThrowIfFailed(mCommandList->Close());
@@ -641,7 +643,7 @@ void ShapesApp::BuildRenderItems()
 		leftSphereRitem->IndexCount = leftSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
 		leftSphereRitem->StartIndexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
 		leftSphereRitem->BaseVertexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
-		leftSphereRitem->Mat = mMaterials["cylinder"].get();
+		leftSphereRitem->Mat = mMaterials["sphere"].get();
 
 		XMStoreFloat4x4(&rightSphereRitem->World, rightSphereWorld);
 		rightSphereRitem->ObjCBIndex = objCBIndex++;
@@ -650,7 +652,7 @@ void ShapesApp::BuildRenderItems()
 		rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
 		rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
 		rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
-		rightSphereRitem->Mat = mMaterials["cylinder"].get();
+		rightSphereRitem->Mat = mMaterials["sphere"].get();
 
 		mAllRitems.push_back(std::move(leftCylRitem));
 		mAllRitems.push_back(std::move(rightCylRitem));
@@ -763,7 +765,7 @@ void ShapesApp::BuildShadersAndInputLayout()
 	mInputLayout =
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 	};
 }
 
