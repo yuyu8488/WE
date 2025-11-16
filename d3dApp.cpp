@@ -1,6 +1,8 @@
 ﻿#include "d3dApp.h"
 #include <WindowsX.h>
 
+#include "GeometryGenerator.h"
+
 D3DApp* D3DApp::mApp = nullptr;
 
 using Microsoft::WRL::ComPtr;
@@ -109,6 +111,20 @@ bool D3DApp::Initialize()
     
     OnResize();
 
+    BuildRootSignature();
+    BuildShaderAndInputLayout();
+    BuildShapeGeometry();
+    BuildMaterials();
+    BuildRenderItems();
+    BuildFrameResources();
+    BuildPSOs();
+
+    ThrowIfFailed(mCommandList->Close());
+    ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
+    mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+    FlushCommandQueue();
+
     return true;
 }
 
@@ -128,19 +144,19 @@ LRESULT D3DApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             mTimer.Start();
         }
         break;
-	case WM_LBUTTONDOWN:
-	case WM_MBUTTONDOWN:
-	case WM_RBUTTONDOWN:
-		OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-		return 0;
-	case WM_LBUTTONUP:
-	case WM_MBUTTONUP:
-	case WM_RBUTTONUP:
-		OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-		return 0;
-	case WM_MOUSEMOVE:
-		OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-		return 0;
+    case WM_LBUTTONDOWN:
+    case WM_MBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+        OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+        return 0;
+    case WM_LBUTTONUP:
+    case WM_MBUTTONUP:
+    case WM_RBUTTONUP:
+        OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+        return 0;
+    case WM_MOUSEMOVE:
+        OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+        return 0;
     case WM_SIZE:
         mClientWidth = LOWORD(lParam);
         mClientHeight = HIWORD(lParam);
@@ -318,6 +334,32 @@ void D3DApp::OnResize()
     mScissorRect = { 0,0,mClientWidth,mClientHeight };
 }
 
+void D3DApp::Update(const GameTimer& gt)
+{
+    CurrentFrameResourceIndex = (CurrentFrameResourceIndex + 1) % gNumFrameResources;
+    CurrentFrameResource = FrameResources[CurrentFrameResourceIndex].get();
+
+    if (CurrentFrameResource->Fence != 0 && mFence->GetCompletedValue() < CurrentFrameResource->Fence)
+    {
+        HANDLE eventHandle = CreateEventEx(nullptr, nullptr, false, EVENT_ALL_ACCESS);
+        ThrowIfFailed(mFence->SetEventOnCompletion(CurrentFrameResource->Fence, eventHandle));
+        if (eventHandle)
+        {
+            WaitForSingleObject(eventHandle, INFINITE);
+            CloseHandle(eventHandle);
+        }
+    }
+
+    UpdateObjectCBs(gt);
+    UpdateMaterialCBs(gt);
+    UpdateMainPassCBs(gt);
+}
+
+void D3DApp::Draw(const GameTimer& gt)
+{
+
+}
+
 void D3DApp::OnMouseDown(WPARAM btnState, int x, int y)
 {
     mLastMousePos.x = x;
@@ -416,8 +458,8 @@ void D3DApp::FlushCommandQueue()
         
         if (EventHandle)
         {
-			WaitForSingleObject(EventHandle, INFINITE);
-			CloseHandle(EventHandle);
+            WaitForSingleObject(EventHandle, INFINITE);
+            CloseHandle(EventHandle);
         }
     }
 }
@@ -431,9 +473,9 @@ bool D3DApp::InitDirect3D()
 {
 #if defined(DEBUG) || defined(_DEBUG)
 {
-	ComPtr<ID3D12Debug> debugController;
-	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
-	debugController->EnableDebugLayer();
+    ComPtr<ID3D12Debug> debugController;
+    ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+    debugController->EnableDebugLayer();
 }
 #endif
 
@@ -593,4 +635,289 @@ void D3DApp::LogAdapterOutputs(IDXGIAdapter* Adapter)
 
 void D3DApp::LogOutputDisplayModes(IDXGIOutput* Output, DXGI_FORMAT Format)
 {
+}
+
+void D3DApp::UpdateObjectCBs(const GameTimer& gt)
+{
+    auto CurrentObjectCB = CurrentFrameResource->ObjectCB.get();
+    for (auto& R : AllRenderItems)
+    {
+        if (R->NumFramesDirty > 0)
+        {
+            XMMATRIX World = XMLoadFloat4x4(&R->World);
+
+            ObjectConstants ObjConstants;
+            XMStoreFloat4x4(&ObjConstants.World, XMMatrixTranspose(World));
+
+            CurrentObjectCB->CopyData(R->ObjectCBIndex, ObjConstants);
+
+            R->NumFramesDirty--;
+        }
+    }
+}
+
+void D3DApp::UpdateMainPassCBs(const GameTimer& gt)
+{
+    XMMATRIX View = XMLoadFloat4x4(&mView);
+    XMMATRIX Proj = XMLoadFloat4x4(&mProj);
+    XMMATRIX ViewProj = XMMatrixMultiply(View, Proj);
+
+    XMVECTOR DetView = XMMatrixDeterminant(View);
+    XMVECTOR DetProj = XMMatrixDeterminant(Proj);
+    XMVECTOR DetViewProj = XMMatrixDeterminant(ViewProj);
+
+    XMMATRIX InvView = XMMatrixInverse(&DetView, View);
+    XMMATRIX InvProj = XMMatrixInverse(&DetProj, Proj);
+    XMMATRIX InvViewProj = XMMatrixInverse(&DetViewProj, ViewProj);
+
+    XMStoreFloat4x4(&MainPassCB.View, XMMatrixTranspose(View));
+    XMStoreFloat4x4(&MainPassCB.Proj, XMMatrixTranspose(Proj));
+    XMStoreFloat4x4(&MainPassCB.ViewProj, XMMatrixTranspose(ViewProj));
+    XMStoreFloat4x4(&MainPassCB.InvView, XMMatrixTranspose(InvView));
+    XMStoreFloat4x4(&MainPassCB.InvProj, XMMatrixTranspose(InvProj));
+    XMStoreFloat4x4(&MainPassCB.InvViewProj, XMMatrixTranspose(InvViewProj));
+
+    MainPassCB.EyePosW = mEyePos;
+    MainPassCB.RenderTargetSize = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
+    MainPassCB.InvRenderTargetSize = XMFLOAT2(1.f / (float)mClientWidth, 1.f / (float)mClientHeight);
+    MainPassCB.NearZ = 1.f;
+    MainPassCB.FarZ = 1000.f;
+    MainPassCB.DeltaTime = gt.DeltaTime();
+    MainPassCB.TotalTime = gt.TotalTime();
+    MainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.f };
+    MainPassCB.cbPerObjectPad1;
+
+    XMVECTOR LightDir = MathHelper::SphericalToCartesian(1.f, mSunTheta, mSunPhi);
+
+    XMStoreFloat3(&MainPassCB.Lights[0].Direction, LightDir);
+    MainPassCB.Lights[0].Strength = { 1.f, 1.f, 1.f };
+
+    auto CurrentPassCB = CurrentFrameResource->PassCB.get();
+    CurrentPassCB->CopyData(0, MainPassCB);
+}
+
+void D3DApp::UpdateMaterialCBs(const GameTimer& gt)
+{
+    auto CurrentMaterialCB = CurrentFrameResource->MaterialCB.get();
+
+    for (auto& e : Materials)
+    {
+        Material* Mat = e.second.get();
+        if (Mat->NumFramesDirty > 0)
+        {
+            XMMATRIX MaterialTransform = XMLoadFloat4x4(&Mat->MatTransform);
+
+            MaterialConstants MatConstants;
+            MatConstants.DiffuseAlbedo = Mat->DiffuseAlbedo;
+            MatConstants.FresnelR0 = Mat->FresnelR0;
+            MatConstants.Roughness = Mat->Roughness;
+
+            CurrentMaterialCB->CopyData(Mat->MatCBIndex, MatConstants);
+            
+            Mat->NumFramesDirty--;
+        }
+    }
+}
+
+void D3DApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& RenderItems)
+{
+    UINT ObjCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+    UINT MatCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
+
+    auto ObjectCB = CurrentFrameResource->ObjectCB->Resource();
+    auto MatCB = CurrentFrameResource->MaterialCB->Resource();
+
+    for (size_t i = 0; i < RenderItems.size(); ++i)
+    {
+        auto RenderItem = RenderItems[i];
+
+        cmdList->IASetVertexBuffers(0, 1, &RenderItem->Geo->VertexBufferView());
+        cmdList->IASetIndexBuffer(&RenderItem->Geo->IndexBufferView());
+        cmdList->IASetPrimitiveTopology(RenderItem->PrimitiveType);
+
+        D3D12_GPU_VIRTUAL_ADDRESS ObjCBAddress = ObjectCB->GetGPUVirtualAddress() + RenderItem->ObjectCBIndex * ObjCBByteSize;
+        D3D12_GPU_VIRTUAL_ADDRESS MatCBAddress = MatCB->GetGPUVirtualAddress() + RenderItem->Mat->MatCBIndex * MatCBByteSize;
+
+        cmdList->SetGraphicsRootConstantBufferView(0, ObjCBAddress);
+        cmdList->SetGraphicsRootConstantBufferView(1, MatCBAddress);
+        cmdList->DrawIndexedInstanced(RenderItem->IndexCount, 1, RenderItem->StartIndexLocation, RenderItem->BaseVertexLocation, 0);
+    }
+}
+
+void D3DApp::BuildRootSignature()
+{
+    CD3DX12_ROOT_PARAMETER RootParameter[3];
+
+    RootParameter[0].InitAsConstantBufferView(0);
+    RootParameter[1].InitAsConstantBufferView(1);
+    RootParameter[2].InitAsConstantBufferView(2);
+
+    CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc(3, RootParameter, 0, nullptr,
+        D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+    Microsoft::WRL::ComPtr<ID3DBlob> SerializedRootSignature = nullptr;
+    Microsoft::WRL::ComPtr<ID3DBlob> Error = nullptr;	
+    HRESULT hr = D3D12SerializeRootSignature(&RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1,
+        SerializedRootSignature.GetAddressOf(), Error.GetAddressOf());
+
+    if (Error != nullptr)
+    {
+        OutputDebugStringA((const char*)Error->GetBufferPointer());
+    }
+    ThrowIfFailed(hr);
+
+    ThrowIfFailed(md3dDevice->CreateRootSignature(
+        0,
+        SerializedRootSignature->GetBufferPointer(),
+        SerializedRootSignature->GetBufferSize(),
+        IID_PPV_ARGS(RootSignature.GetAddressOf())));
+}
+
+void D3DApp::BuildShaderAndInputLayout()
+{
+    Shaders["VS"] = d3dUtil::CompileShader(L"Shaders/Default.hlsl", nullptr, "VS", "vs_5_0");
+    Shaders["PS"] = d3dUtil::CompileShader(L"Shaders/Default.hlsl", nullptr, "PS", "ps_5_0");
+
+    InputLayout =
+    {
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+        {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    };
+}
+
+void D3DApp::BuildShapeGeometry()
+{
+    GeometryGenerator GeoGen;
+    
+    GeometryGenerator::MeshData Box = GeoGen.CreateBox(1.5f, 0.5f, 1.5f, 3);
+    UINT BoxVertexOffset = 0;
+    UINT BoxIndexOffset = 0;
+
+    SubmeshGeometry BoxSubMesh;
+    BoxSubMesh.IndexCount = (UINT)Box.Indices32.size();
+    BoxSubMesh.StartIndexLocation = BoxIndexOffset;
+    BoxSubMesh.BaseVertexLocation = BoxVertexOffset;
+
+    auto TotalVertexCount = Box.Vertices.size();
+    std::vector<Vertex> Vertices(TotalVertexCount);
+    
+    UINT k = 0;
+    for (size_t i = 0; i < Box.Vertices.size(); i++, ++k)
+    {
+        Vertices[i].Pos = Box.Vertices[i].Position;
+        Vertices[i].Normal = Box.Vertices[i].Normal;
+    }
+
+    std::vector<std::uint16_t> Indices;
+    Indices.insert(Indices.end(), std::begin(Box.GetIndices16()), std::end(Box.GetIndices16()));
+
+    const UINT VertexBufferByteSize = (UINT)Vertices.size() * sizeof(Vertex);
+    const UINT IndexBufferByteSize = (UINT)Indices.size() * sizeof(std::uint16_t);
+
+    auto Geo = make_unique<MeshGeometry>();
+    Geo->Name = "ShapeGeo";
+
+    ThrowIfFailed(D3DCreateBlob(VertexBufferByteSize, &Geo->VertexBufferCPU));
+    CopyMemory(Geo->VertexBufferCPU->GetBufferPointer(), Vertices.data(), VertexBufferByteSize);
+
+    ThrowIfFailed(D3DCreateBlob(IndexBufferByteSize, &Geo->IndexBufferCPU));
+    CopyMemory(Geo->IndexBufferCPU->GetBufferPointer(), Indices.data(), IndexBufferByteSize);
+
+    Geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(
+        md3dDevice.Get(),
+        mCommandList.Get(),
+        Vertices.data(),
+        VertexBufferByteSize,
+        Geo->VertexBufferUploader);
+
+    Geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(
+        md3dDevice.Get(),
+        mCommandList.Get(),
+        Indices.data(),
+        IndexBufferByteSize,
+        Geo->IndexBufferUploader);
+
+    Geo->VertexByteStride = sizeof(Vertex);
+    Geo->VertexBufferByteSize = VertexBufferByteSize;
+    Geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+    Geo->IndexBufferByteSize = IndexBufferByteSize;
+
+    Geo->DrawArgs["Box"] = BoxSubMesh;
+
+    Geometries[Geo->Name] = std::move(Geo);
+}
+
+void D3DApp::BuildMaterials()
+{
+    auto RedMaterial = std::make_unique<Material>();
+    RedMaterial->Name = "M_Red";
+    RedMaterial->MatCBIndex = 0;
+    RedMaterial->DiffuseAlbedo = XMFLOAT4(1.f, 0.f, 0.f, 1.f);
+    RedMaterial->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+    RedMaterial->Roughness = 0.125f;
+
+    Materials[RedMaterial->Name] = std::move(RedMaterial);
+}
+
+void D3DApp::BuildRenderItems()
+{
+    auto BoxRenderItem = std::make_unique<RenderItem>();
+    XMStoreFloat4x4(&BoxRenderItem->World, XMMatrixScaling(2.f, 2.f, 2.f) * XMMatrixTranslation(0.5, 0.5f, 0.0f));
+    BoxRenderItem->ObjectCBIndex = 0;
+    BoxRenderItem->Geo = Geometries["ShapeGeo"].get();
+    BoxRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    BoxRenderItem->IndexCount = BoxRenderItem->Geo->DrawArgs["Box"].IndexCount;
+    BoxRenderItem->StartIndexLocation = BoxRenderItem->Geo->DrawArgs["Box"].StartIndexLocation;
+    BoxRenderItem->BaseVertexLocation = BoxRenderItem->Geo->DrawArgs["Box"].BaseVertexLocation;
+    BoxRenderItem->Mat = Materials["M_Red"].get();
+    AllRenderItems.push_back(std::move(BoxRenderItem));
+}
+
+void D3DApp::BuildFrameResources()
+{
+    for (int i = 0; i < gNumFrameResources; ++i)
+    {
+        FrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(),
+            1, (UINT)AllRenderItems.size(), (UINT)Materials.size(), 0));
+    }
+}
+
+void D3DApp::BuildPSOs()
+{
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC PsoDesc;
+    ZeroMemory(&PsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+
+    PsoDesc.pRootSignature = RootSignature.Get();
+    PsoDesc.VS =
+    {
+        reinterpret_cast<BYTE*>(Shaders["VS"]->GetBufferPointer()),
+        Shaders["VS"]->GetBufferSize()
+    };
+    PsoDesc.PS =
+    {
+        reinterpret_cast<BYTE*>(Shaders["PS"]->GetBufferPointer()),
+        Shaders["PS"]->GetBufferSize()
+    };
+    PsoDesc.DS;
+    PsoDesc.HS;
+    PsoDesc.GS;
+    PsoDesc.StreamOutput = D3D12_STREAM_OUTPUT_DESC();
+    PsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+    PsoDesc.SampleMask = UINT_MAX;
+    PsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+    PsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+    PsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+    PsoDesc.InputLayout = { InputLayout.data(), (UINT)InputLayout.size() };
+    PsoDesc.IBStripCutValue;
+    PsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    PsoDesc.NumRenderTargets = 1;
+    PsoDesc.RTVFormats[0] = mBackBufferFormat;
+    PsoDesc.DSVFormat = mDepthStencilFormat;
+    PsoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
+    PsoDesc.SampleDesc.Quality = m4xMsaaState ? m4xMsaaQuality - 1 : 0;
+    PsoDesc.NodeMask;
+    PsoDesc.CachedPSO;
+    PsoDesc.Flags;
+   
+    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&PsoDesc, IID_PPV_ARGS(&PSOs["Render"])));
 }

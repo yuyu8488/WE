@@ -58,6 +58,7 @@ private:
 	void BuildPSOs();
 	void BuildFrameResources();
 	void BuildRenderItems();
+
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 
 private:

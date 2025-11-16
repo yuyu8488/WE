@@ -3,10 +3,33 @@
 #include "d3dUtil.h"
 #include "GameTimer.h"
 #include "MathHelper.h"
+#include "FrameResource.h"
 
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
+
+static const int gNumFrameResources = 3;
+
+struct RenderItem
+{
+	RenderItem() = default;
+
+	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
+
+	int NumFramesDirty = gNumFrameResources;
+	
+	UINT ObjectCBIndex = -1;
+
+	MeshGeometry* Geo = nullptr;
+	Material* Mat = nullptr;
+
+	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	UINT IndexCount = 0;
+	UINT StartIndexLocation = 0;
+	UINT BaseVertexLocation = 0;
+};
 
 class D3DApp
 {
@@ -32,12 +55,11 @@ public:
 	virtual LRESULT CALLBACK MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 public:
-	bool mIsWireframe = false;
-
 	DirectX::XMFLOAT3 mEyePos = {0.f, 0.f, 0.f};
 	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
 
+	bool mIsWireframe = false;
 	float mTheta = 1.5f* DirectX::XM_PI;
 	float mPhi = DirectX::XM_PIDIV2 - 0.1f;
 	float mRadius = 50.0f;
@@ -50,18 +72,19 @@ public:
 protected:
 	virtual void CreateRtvAndDsvDescriptorHeaps();
 	virtual void OnResize();
-	virtual void Update(const GameTimer& gt) = 0;
-	virtual void Draw(const GameTimer& gt) = 0;
+
+	virtual void Update(const GameTimer& gt);
+	virtual void Draw(const GameTimer& gt);
 	
 	virtual void OnMouseDown(WPARAM btnState, int x, int y);
 	virtual void OnMouseUp(WPARAM btnState, int x, int y);
 	virtual void OnMouseMove(WPARAM btnState, int x, int y);
-	
+
 	bool InitMainWindow();
+
 	bool InitDirect3D();
 	void CreateCommandObjects();
 	void CreateSwapChain();
-	
 	void FlushCommandQueue();
 
 	ID3D12Resource* CurrentBackBuffer() const;
@@ -74,8 +97,9 @@ protected:
 	void LogAdapterOutputs(IDXGIAdapter* Adapter);
 	void LogOutputDisplayModes(IDXGIOutput* Output, DXGI_FORMAT Format);
 
+protected:
 	//***************************************************************************************
-	// Member variables
+	// Initialize D3D12 Member variables
 	//***************************************************************************************
 	static D3DApp* mApp;
 
@@ -126,5 +150,43 @@ protected:
 	DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	int mClientWidth = 800;
 	int mClientHeight = 600;
+
+private:
+	void UpdateObjectCBs(const GameTimer& gt);
+	void UpdateMainPassCBs(const GameTimer& gt);
+	void UpdateMaterialCBs(const GameTimer& gt);
+	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& RenderItems);
+	
+	void BuildRootSignature();
+	void BuildShaderAndInputLayout();
+	void BuildShapeGeometry();
+	void BuildMaterials();
+	void BuildRenderItems();
+	void BuildFrameResources();
+	void BuildPSOs();
+
+
+private:
+	std::vector<std::unique_ptr<FrameResource>> FrameResources;
+	FrameResource* CurrentFrameResource = nullptr;
+	int CurrentFrameResourceIndex = 0;
+
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignature = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CbvHeap = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> SrvHeap = nullptr;
+
+	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> Geometries;
+	std::unordered_map<std::string, std::unique_ptr<Material>> Materials;
+	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> Shaders;
+	std::unordered_map <std::string, Microsoft::WRL::ComPtr<ID3D12PipelineState>> PSOs;
+
+	std::vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
+
+	std::vector<std::unique_ptr<RenderItem>> AllRenderItems;
+
+	PassConstants MainPassCB;
+	UINT PassCbvOffset = 0;
+
+
 };
 
