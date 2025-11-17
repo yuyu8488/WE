@@ -1,15 +1,16 @@
 ﻿#pragma once
 
 #include "d3dUtil.h"
-#include "GameTimer.h"
 #include "MathHelper.h"
 #include "FrameResource.h"
+#include "GeometryGenerator.h"
+#include "GameTimer.h"
+#include "config.h"
 
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 
-static const int gNumFrameResources = 3;
 
 struct RenderItem
 {
@@ -17,7 +18,7 @@ struct RenderItem
 
 	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
 
-	int NumFramesDirty = gNumFrameResources;
+	int NumFramesDirty = NUM_FRAME_RESOURCES;
 	
 	UINT ObjectCBIndex = -1;
 
@@ -114,7 +115,7 @@ protected:
 	bool m4xMsaaState = false;
 	UINT m4xMsaaQuality = 0;
 
-	GameTimer mTimer;
+	GameTimer* mTimer;
 
 	Microsoft::WRL::ComPtr<IDXGIFactory4> mDxgiFactory;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
@@ -186,7 +187,5 @@ private:
 
 	PassConstants MainPassCB;
 	UINT PassCbvOffset = 0;
-
-
 };
 

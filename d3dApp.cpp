@@ -2,6 +2,8 @@
 #include <WindowsX.h>
 
 #include "GeometryGenerator.h"
+#include "Material.h"
+
 
 D3DApp* D3DApp::mApp = nullptr;
 
@@ -336,7 +338,7 @@ void D3DApp::OnResize()
 
 void D3DApp::Update(const GameTimer& gt)
 {
-    CurrentFrameResourceIndex = (CurrentFrameResourceIndex + 1) % gNumFrameResources;
+    CurrentFrameResourceIndex = (CurrentFrameResourceIndex + 1) % NUM_FRAME_RESOURCES;
     CurrentFrameResource = FrameResources[CurrentFrameResourceIndex].get();
 
     if (CurrentFrameResource->Fence != 0 && mFence->GetCompletedValue() < CurrentFrameResource->Fence)
@@ -719,7 +721,6 @@ void D3DApp::UpdateMaterialCBs(const GameTimer& gt)
     }
 }
 
-void D3DApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& RenderItems)
 {
     UINT ObjCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
     UINT MatCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
@@ -844,7 +845,7 @@ void D3DApp::BuildShapeGeometry()
 
     Geo->DrawArgs["Box"] = BoxSubMesh;
 
-    Geometries[Geo->Name] = std::move(Geo);
+    Geometries[Geo->Name] std::move(Geo);
 }
 
 void D3DApp::BuildMaterials()
@@ -875,7 +876,7 @@ void D3DApp::BuildRenderItems()
 
 void D3DApp::BuildFrameResources()
 {
-    for (int i = 0; i < gNumFrameResources; ++i)
+    for (int i = 0; i < NUM_FRAME_RESOURCES; ++i)
     {
         FrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(),
             1, (UINT)AllRenderItems.size(), (UINT)Materials.size(), 0));
