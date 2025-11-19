@@ -876,7 +876,7 @@ void D3DApp::BuildShapeGeometry()
 {
     GeometryGenerator GeoGen;
     
-    GeometryGenerator::MeshData Box = GeoGen.CreateBox(1.5f, 0.5f, 1.5f, 3);
+    GeometryGenerator::MeshData Box = GeoGen.CreateBox(5.5f, 5.5f, 5.5f, 3);
     UINT BoxVertexOffset = 0;
     UINT BoxIndexOffset = 0;
 
@@ -941,7 +941,7 @@ void D3DApp::BuildMaterials()
     RedMaterial->MatCBIndex = 0;
     RedMaterial->DiffuseAlbedo = XMFLOAT4(1.f, 0.f, 0.f, 1.f);
     RedMaterial->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
-    RedMaterial->Roughness = 0.125f;
+    RedMaterial->Roughness = 0.325f;
 
     Materials[RedMaterial->Name] = std::move(RedMaterial);
 }
@@ -949,7 +949,7 @@ void D3DApp::BuildMaterials()
 void D3DApp::BuildRenderItems()
 {
     auto BoxRenderItem = std::make_unique<RenderItem>();
-    XMStoreFloat4x4(&BoxRenderItem->World, XMMatrixScaling(2.f, 2.f, 2.f) * XMMatrixTranslation(0.5, 0.5f, 0.0f));
+    XMStoreFloat4x4(&BoxRenderItem->World, XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixTranslation(0.f, 0.f, 0.f));
     BoxRenderItem->ObjectCBIndex = 0;
     BoxRenderItem->Geo = Geometries["ShapeGeo"].get();
     BoxRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;

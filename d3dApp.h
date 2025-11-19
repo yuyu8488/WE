@@ -1,30 +1,20 @@
 ﻿#pragma once
 
-#include "config.h"
-
 #include "d3dUtil.h"
-
+#include "config.h"
 #include "GeometryGenerator.h"
 #include "FrameResource.h"
 #include "MathHelper.h"
 #include "Material.h"
 #include "GameTimer.h"
 
-
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 
-
 struct RenderItem
 {
 public:
-	RenderItem() 
-	{
-		Geo = new MeshGeometry();
-		Mat = new Material();
-	};
-
 	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
 
 	int NumFramesDirty = NUM_FRAME_RESOURCES;
@@ -59,10 +49,10 @@ public:
 	bool Get4xMsaaState() const;
 	void Set4xMsaaState(bool Value);
 
-	virtual bool Initialize();
+	bool Initialize();
 	int Run();
 
-	virtual LRESULT CALLBACK MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	LRESULT CALLBACK MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 public:
 	DirectX::XMFLOAT3 mEyePos = {0.f, 0.f, 0.f};
@@ -80,15 +70,15 @@ public:
 	POINT mLastMousePos;
 	
 protected:
-	virtual void CreateRtvAndDsvDescriptorHeaps();
-	virtual void OnResize();
+	void CreateRtvAndDsvDescriptorHeaps();
+	void OnResize();
 
-	virtual void Update(const GameTimer& gt);
-	virtual void Draw(const GameTimer& gt);
+	void Update(const GameTimer& gt);
+	void Draw(const GameTimer& gt);
 	
-	virtual void OnMouseDown(WPARAM btnState, int x, int y);
-	virtual void OnMouseUp(WPARAM btnState, int x, int y);
-	virtual void OnMouseMove(WPARAM btnState, int x, int y);
+	void OnMouseDown(WPARAM btnState, int x, int y);
+	void OnMouseUp(WPARAM btnState, int x, int y);
+	void OnMouseMove(WPARAM btnState, int x, int y);
 
 	void UpdateCamera(const GameTimer& gt);
 	void OnKeyboardInput(const GameTimer& gt);
@@ -178,7 +168,6 @@ private:
 	void BuildFrameResources();
 	void BuildPSOs();
 
-
 private:
 	std::vector<std::unique_ptr<FrameResource>> FrameResources;
 	FrameResource* CurrentFrameResource = nullptr;
@@ -201,4 +190,3 @@ private:
 	PassConstants MainPassCB;
 	UINT PassCbvOffset = 0;
 };
-

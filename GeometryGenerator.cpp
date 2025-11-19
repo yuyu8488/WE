@@ -1,4 +1,4 @@
-#include "GeometryGenerator.h"
+﻿#include "GeometryGenerator.h"
 
 using namespace DirectX;
 
@@ -456,7 +456,6 @@ void GeometryGenerator::Subdivide(MeshData& meshData)
 {
 	// Save a copy of the input geometry.
 	MeshData inputCopy = meshData;
-
 
 	meshData.Vertices.resize(0);
 	meshData.Indices32.resize(0);

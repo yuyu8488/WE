@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <d3d12.h>
 #include <Windows.h>
@@ -11,10 +11,8 @@
 #include <memory>
 #include <unordered_map>
 
-// Defines a subrange of geometry in a MeshGeometry.  This is for when multiple
-// geometries are stored in one vertex and index buffer.  It provides the offsets
-// and data needed to draw a subset of geometry stores in the vertex and index 
-// buffers so that we can implement the technique described by Figure 6.3.
+// Defines a subrange of geometry in a MeshGeometry.  
+// This is for when multiple geometries are stored in one vertex and index buffer.  
 struct SubmeshGeometry
 {
 public:
@@ -51,8 +49,7 @@ public:
 	UINT IndexBufferByteSize = 0;
 
 	// A MeshGeometry may store multiple geometries in one vertex/index buffer.
-	// Use this container to define the Submesh geometries so we can draw
-	// the Submeshes individually.
+	// Use this container to define the Submesh geometries so we can draw the Submeshes individually.
 	std::unordered_map<std::string, SubmeshGeometry> DrawArgs;
 
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView()const
@@ -91,12 +88,11 @@ public:
 
 	struct Vertex
 	{
-		Vertex() {}
 		Vertex(
-			const DirectX::XMFLOAT3& p,
-			const DirectX::XMFLOAT3& n,
-			const DirectX::XMFLOAT3& t,
-			const DirectX::XMFLOAT2& uv) :
+			const DirectX::XMFLOAT3& p = {0,0,0},
+			const DirectX::XMFLOAT3& n = {0,0,0},
+			const DirectX::XMFLOAT3& t = {0,0,0},
+			const DirectX::XMFLOAT2& uv = {0,0}) :
 			Position(p), Normal(n), TangentU(t), TexC(uv) {}
 
 		Vertex(
