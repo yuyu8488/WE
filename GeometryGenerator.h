@@ -1,12 +1,15 @@
 #pragma once
 
+#include <d3d12.h>
 #include <Windows.h>
-#include <cstdint>
-#include <DirectXMath.h>
-#include <DirectXCollision.h>
+#include <wrl.h>
 #include <vector>
 #include <string>
-#include <d3d12.h>
+#include <DirectXMath.h>
+#include <DirectXCollision.h>
+#include <cstdint>
+#include <memory>
+#include <unordered_map>
 
 // Defines a subrange of geometry in a MeshGeometry.  This is for when multiple
 // geometries are stored in one vertex and index buffer.  It provides the offsets
@@ -14,6 +17,7 @@
 // buffers so that we can implement the technique described by Figure 6.3.
 struct SubmeshGeometry
 {
+public:
 	UINT IndexCount = 0;
 	UINT StartIndexLocation = 0;
 	INT BaseVertexLocation = 0;
@@ -25,6 +29,7 @@ struct SubmeshGeometry
 
 struct MeshGeometry
 {
+public:
 	// Give it a name so we can look it up by name.
 	std::string Name;
 
@@ -112,6 +117,7 @@ public:
 
 	struct MeshData
 	{
+	public:
 		std::vector<Vertex> Vertices;
 		std::vector<std::uint32_t> Indices32;
 

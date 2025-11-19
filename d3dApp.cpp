@@ -1,9 +1,10 @@
-﻿#include "d3dApp.h"
-#include <WindowsX.h>
+﻿#pragma once
 
+#include "d3dApp.h"
+#include "d3dx12.h"
+#include <WindowsX.h>
 #include "GeometryGenerator.h"
 #include "Material.h"
-
 
 D3DApp* D3DApp::mApp = nullptr;
 
@@ -110,8 +111,11 @@ bool D3DApp::Initialize()
     {
         return false;
     }
-    
+
     OnResize();
+
+    // Reset the command list to prep for initialization commands.
+    ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
     BuildRootSignature();
     BuildShaderAndInputLayout();
@@ -338,6 +342,9 @@ void D3DApp::OnResize()
 
 void D3DApp::Update(const GameTimer& gt)
 {
+    OnKeyboardInput(gt);
+    UpdateCamera(gt);
+
     CurrentFrameResourceIndex = (CurrentFrameResourceIndex + 1) % NUM_FRAME_RESOURCES;
     CurrentFrameResource = FrameResources[CurrentFrameResourceIndex].get();
 
@@ -359,6 +366,50 @@ void D3DApp::Update(const GameTimer& gt)
 
 void D3DApp::Draw(const GameTimer& gt)
 {
+    auto cmdListAlloc = CurrentFrameResource->CmdListAlloc;
+    ThrowIfFailed(cmdListAlloc->Reset());
+
+    ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), PSOs["Render"].Get()));
+
+    mCommandList->RSSetViewports(1, &mScreenViewport);
+    mCommandList->RSSetScissorRects(1, &mScissorRect);
+
+    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+        D3D12_RESOURCE_STATE_PRESENT,
+        D3D12_RESOURCE_STATE_RENDER_TARGET);
+    mCommandList->ResourceBarrier(1, &barrier);
+
+    mCommandList->ClearRenderTargetView(CurrentBackBufferView(),
+        DirectX::Colors::LightSteelBlue, 0, nullptr);
+    mCommandList->ClearDepthStencilView(DepthStencilView(),
+        D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1, 0, 0, nullptr);
+
+    auto BackBufferView = CurrentBackBufferView();
+    auto DSV = DepthStencilView();
+    mCommandList->OMSetRenderTargets(1, &BackBufferView, true, &DSV);
+
+    mCommandList->SetGraphicsRootSignature(RootSignature.Get());
+
+    auto PassCB = CurrentFrameResource->PassCB->Resource();
+    mCommandList->SetGraphicsRootConstantBufferView(2, PassCB->GetGPUVirtualAddress());
+
+    DrawRenderItems(mCommandList.Get(), RenderItems);
+
+    auto barrier2 = CD3DX12_RESOURCE_BARRIER::Transition(
+        CurrentBackBuffer(),
+        D3D12_RESOURCE_STATE_RENDER_TARGET,
+        D3D12_RESOURCE_STATE_PRESENT);
+    mCommandList->ResourceBarrier(1, &barrier2);
+
+    ThrowIfFailed(mCommandList->Close());
+    ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
+    mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+    ThrowIfFailed(mSwapChain->Present(0, 0));
+
+    mCurrBackBuffer = (mCurrBackBuffer + 1) % SwapChainBufferCount;
+    CurrentFrameResource->Fence = ++mCurrentFence;
+    mCommandQueue->Signal(mFence.Get(), mCurrentFence);
 
 }
 
@@ -405,6 +456,39 @@ void D3DApp::OnMouseMove(WPARAM btnState, int x, int y)
 
     mLastMousePos.x = x;
     mLastMousePos.y = y;
+}
+
+void D3DApp::UpdateCamera(const GameTimer& gt)
+{
+    mEyePos.x = mRadius * sinf(mPhi) * cosf(mTheta);
+    mEyePos.z = mRadius * sinf(mPhi) * sinf(mTheta);
+    mEyePos.y = mRadius * cosf(mPhi);
+
+    XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
+    XMVECTOR target = XMVectorZero();
+    XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
+
+    XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
+    XMStoreFloat4x4(&mView, view);
+}
+
+void D3DApp::OnKeyboardInput(const GameTimer& gt)
+{
+    const float dt = gt.DeltaTime();
+
+    if (GetAsyncKeyState(VK_LEFT) & 0x8000)
+        mSunTheta -= 1.0f * dt;
+
+    if (GetAsyncKeyState(VK_RIGHT) & 0x8000)
+        mSunTheta += 1.0f * dt;
+
+    if (GetAsyncKeyState(VK_UP) & 0x8000)
+        mSunPhi -= 1.0f * dt;
+
+    if (GetAsyncKeyState(VK_DOWN) & 0x8000)
+        mSunPhi += 1.0f * dt;
+
+    mSunPhi = MathHelper::Clamp(mSunPhi, 0.1f, XM_PIDIV2);
 }
 
 bool D3DApp::InitMainWindow()
@@ -493,10 +577,10 @@ bool D3DApp::InitDirect3D()
         Microsoft::WRL::ComPtr<IDXGIAdapter> WarpAdapter;
         ThrowIfFailed(mDxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&WarpAdapter)));
     
-        D3D12CreateDevice(
+        ThrowIfFailed(D3D12CreateDevice(
             WarpAdapter.Get(),
             D3D_FEATURE_LEVEL_11_0,
-            IID_PPV_ARGS(&md3dDevice));
+            IID_PPV_ARGS(&md3dDevice)));
     }
     
     ThrowIfFailed(md3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
@@ -721,6 +805,7 @@ void D3DApp::UpdateMaterialCBs(const GameTimer& gt)
     }
 }
 
+void D3DApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& RenderItems)
 {
     UINT ObjCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
     UINT MatCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
@@ -738,6 +823,7 @@ void D3DApp::UpdateMaterialCBs(const GameTimer& gt)
 
         D3D12_GPU_VIRTUAL_ADDRESS ObjCBAddress = ObjectCB->GetGPUVirtualAddress() + RenderItem->ObjectCBIndex * ObjCBByteSize;
         D3D12_GPU_VIRTUAL_ADDRESS MatCBAddress = MatCB->GetGPUVirtualAddress() + RenderItem->Mat->MatCBIndex * MatCBByteSize;
+   
 
         cmdList->SetGraphicsRootConstantBufferView(0, ObjCBAddress);
         cmdList->SetGraphicsRootConstantBufferView(1, MatCBAddress);
@@ -845,7 +931,7 @@ void D3DApp::BuildShapeGeometry()
 
     Geo->DrawArgs["Box"] = BoxSubMesh;
 
-    Geometries[Geo->Name] std::move(Geo);
+    Geometries[Geo->Name] = std::move(Geo);
 }
 
 void D3DApp::BuildMaterials()
@@ -872,6 +958,11 @@ void D3DApp::BuildRenderItems()
     BoxRenderItem->BaseVertexLocation = BoxRenderItem->Geo->DrawArgs["Box"].BaseVertexLocation;
     BoxRenderItem->Mat = Materials["M_Red"].get();
     AllRenderItems.push_back(std::move(BoxRenderItem));
+
+    for (auto& e : AllRenderItems)
+    {
+        RenderItems.push_back(e.get());
+    }
 }
 
 void D3DApp::BuildFrameResources()

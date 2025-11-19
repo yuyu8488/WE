@@ -22,9 +22,6 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{985d6c8e-742b-4003-b803-0a050416f6e2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Examples">
-      <UniqueIdentifier>{311cd3aa-0f44-439c-8df4-bbcca914f654}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FrameResource.cpp">
@@ -55,6 +52,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

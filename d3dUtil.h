@@ -2,7 +2,7 @@
 
 #include <windows.h>
 #include <wrl.h>
-#include <dxgi1_4.h>                                                      
+#include <dxgi1_4.h>
 #include <d3d12.h>
 #include <D3Dcompiler.h>
 #include <DirectXMath.h>
@@ -20,6 +20,7 @@
 #include <sstream>
 #include <cassert>
 #include "d3dx12.h"
+#include "MathHelper.h"
 
 inline void d3dSetDebugName(IDXGIObject* obj, const char* name)
 {

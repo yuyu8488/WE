@@ -1,11 +1,15 @@
 ﻿#pragma once
 
-#include "d3dUtil.h"
-#include "MathHelper.h"
-#include "FrameResource.h"
-#include "GeometryGenerator.h"
-#include "GameTimer.h"
 #include "config.h"
+
+#include "d3dUtil.h"
+
+#include "GeometryGenerator.h"
+#include "FrameResource.h"
+#include "MathHelper.h"
+#include "Material.h"
+#include "GameTimer.h"
+
 
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
@@ -14,7 +18,12 @@
 
 struct RenderItem
 {
-	RenderItem() = default;
+public:
+	RenderItem() 
+	{
+		Geo = new MeshGeometry();
+		Mat = new Material();
+	};
 
 	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
 
@@ -34,7 +43,7 @@ struct RenderItem
 
 class D3DApp
 {
-protected:
+public:
 	D3DApp(HINSTANCE hInstance);
 	D3DApp(const D3DApp& rhs) = delete;
 	D3DApp& operator=(const D3DApp& rhs) = delete;
@@ -81,6 +90,9 @@ protected:
 	virtual void OnMouseUp(WPARAM btnState, int x, int y);
 	virtual void OnMouseMove(WPARAM btnState, int x, int y);
 
+	void UpdateCamera(const GameTimer& gt);
+	void OnKeyboardInput(const GameTimer& gt);
+
 	bool InitMainWindow();
 
 	bool InitDirect3D();
@@ -115,7 +127,7 @@ protected:
 	bool m4xMsaaState = false;
 	UINT m4xMsaaQuality = 0;
 
-	GameTimer* mTimer;
+	GameTimer mTimer;
 
 	Microsoft::WRL::ComPtr<IDXGIFactory4> mDxgiFactory;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
@@ -184,6 +196,7 @@ private:
 	std::vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
 
 	std::vector<std::unique_ptr<RenderItem>> AllRenderItems;
+	std::vector<RenderItem*> RenderItems;
 
 	PassConstants MainPassCB;
 	UINT PassCbvOffset = 0;

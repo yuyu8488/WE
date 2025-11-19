@@ -1,6 +1,8 @@
 ﻿#pragma once
 
-#include "d3dUtil.h"
+#include "d3d12.h"
+#include "d3dx12.h"
+#include "wrl.h"
 
 template<typename T>
 class UploadBuffer
@@ -31,6 +33,7 @@ public:
 
     UploadBuffer(const UploadBuffer& rhs) = delete;
     UploadBuffer& operator=(const UploadBuffer& rhs) = delete;
+
     virtual ~UploadBuffer()
     {
         if (mUploadBuffer != nullptr)

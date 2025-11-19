@@ -23,6 +23,6 @@ private:
 	__int64 mPrevTime;
 	__int64 mCurrTime;
 
-	bool mStopped;
+	bool mStopped = false;
 };
 
