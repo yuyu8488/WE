@@ -456,17 +456,46 @@ void D3DApp::OnMouseMove(WPARAM btnState, int x, int y)
 
     mLastMousePos.x = x;
     mLastMousePos.y = y;
+
+    // TODO: 카메라가 아닌 AllRenderItme[0] 번의 로테이션 돌려보기.
+    if (AllRenderItems[0] != nullptr)
+    {
+        //DirectX::XMVECTOR X;
+        //XMQuaternionRotationRollPitchYaw
+        //XMMatrixRotationQuaternion(X);
+
+        float Pitch = XMConvertToRadians(45);
+        float Yaw = XMConvertToRadians(0);
+        float Roll = XMConvertToRadians(0);
+        XMVECTOR q = DirectX::XMQuaternionRotationRollPitchYaw(Pitch, Yaw, Roll);
+
+        XMFLOAT4 Temp;
+        XMStoreFloat4(&Temp, q);
+
+    }
 }
 
 void D3DApp::UpdateCamera(const GameTimer& gt)
 {
-    mEyePos.x = mRadius * sinf(mPhi) * cosf(mTheta);
-    mEyePos.z = mRadius * sinf(mPhi) * sinf(mTheta);
-    mEyePos.y = mRadius * cosf(mPhi);
+    //mEyePos.x = mRadius * sinf(mPhi) * cosf(mTheta);
+    //mEyePos.z = mRadius * sinf(mPhi) * sinf(mTheta);
+    //mEyePos.y = mRadius * cosf(mPhi);
 
-    XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
+    //XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
+    XMVECTOR pos = XMVectorSet(5.f, 0.f, -50.f, 1.0f);
     XMVECTOR target = XMVectorZero();
     XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
+
+    //if (AllRenderItems[0] != nullptr)
+    //{
+    //    //float _41, _42, _43,
+    //    XMFLOAT4X4 TargetWorld = AllRenderItems[0].get()->World;
+    //    XMVECTOR TargetPosition = XMVECTOR{ TargetWorld._41, TargetWorld._42, TargetWorld._43 };
+    //
+    //    XMMATRIX view = XMMatrixLookAtLH(pos, TargetPosition, up);
+    //    XMStoreFloat4x4(&mView, view);
+    //    return;
+    //}
 
     XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
     XMStoreFloat4x4(&mView, view);
@@ -937,9 +966,9 @@ void D3DApp::BuildShapeGeometry()
 void D3DApp::BuildMaterials()
 {
     auto RedMaterial = std::make_unique<Material>();
-    RedMaterial->Name = "M_Red";
+    RedMaterial->Name = "M_White";
     RedMaterial->MatCBIndex = 0;
-    RedMaterial->DiffuseAlbedo = XMFLOAT4(1.f, 0.f, 0.f, 1.f);
+    RedMaterial->DiffuseAlbedo = XMFLOAT4(1.0f, 1.f, 1.f, 1.f);
     RedMaterial->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
     RedMaterial->Roughness = 0.325f;
 
@@ -949,14 +978,14 @@ void D3DApp::BuildMaterials()
 void D3DApp::BuildRenderItems()
 {
     auto BoxRenderItem = std::make_unique<RenderItem>();
-    XMStoreFloat4x4(&BoxRenderItem->World, XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixTranslation(0.f, 0.f, 0.f));
+    XMStoreFloat4x4(&BoxRenderItem->World, XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixTranslation(0.f, 0.f, 0.f));
     BoxRenderItem->ObjectCBIndex = 0;
     BoxRenderItem->Geo = Geometries["ShapeGeo"].get();
     BoxRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
     BoxRenderItem->IndexCount = BoxRenderItem->Geo->DrawArgs["Box"].IndexCount;
     BoxRenderItem->StartIndexLocation = BoxRenderItem->Geo->DrawArgs["Box"].StartIndexLocation;
     BoxRenderItem->BaseVertexLocation = BoxRenderItem->Geo->DrawArgs["Box"].BaseVertexLocation;
-    BoxRenderItem->Mat = Materials["M_Red"].get();
+    BoxRenderItem->Mat = Materials["M_White"].get();
     AllRenderItems.push_back(std::move(BoxRenderItem));
 
     for (auto& e : AllRenderItems)
