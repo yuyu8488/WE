@@ -196,9 +196,9 @@ protected:
 	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
 
 	bool mIsWireframe = false;
-	float mTheta = 1.5f * DirectX::XM_PI;
-	float mPhi = DirectX::XM_PIDIV2 - 0.1f;
-	float mRadius = 50.0f;
+	float mTheta = 1.3f * DirectX::XM_PI;
+	float mPhi = 0.4f * DirectX::XM_PI;
+	float mRadius = 2.5f;
 
 	float mSunTheta = 1.25f * DirectX::XM_PI;
 	float mSunPhi = DirectX::XM_PIDIV4;

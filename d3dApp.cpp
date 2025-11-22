@@ -387,10 +387,8 @@ void D3DApp::Draw(const GameTimer& gt)
         D3D12_RESOURCE_STATE_RENDER_TARGET);
     mCommandList->ResourceBarrier(1, &barrier);
 
-    mCommandList->ClearRenderTargetView(CurrentBackBufferView(),
-        DirectX::Colors::LightSteelBlue, 0, nullptr);
-    mCommandList->ClearDepthStencilView(DepthStencilView(),
-        D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1, 0, 0, nullptr);
+    mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
+    mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1, 0, 0, nullptr);
 
     mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
@@ -474,7 +472,7 @@ void D3DApp::UpdateCamera(const GameTimer& gt)
 
     XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
     XMVECTOR target = XMVectorZero();
-    XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
+    XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, .0f);
 
     XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
     XMStoreFloat4x4(&mView, view);
@@ -743,13 +741,39 @@ void D3DApp::UpdateObjectCBs(const GameTimer& gt)
         if (R->NumFramesDirty > 0)
         {
             XMMATRIX World = XMLoadFloat4x4(&R->World);
+            XMMATRIX TexTransform = XMLoadFloat4x4(&R->TexTransform);
 
             ObjectConstants ObjConstants;
             XMStoreFloat4x4(&ObjConstants.World, XMMatrixTranspose(World));
+            XMStoreFloat4x4(&ObjConstants.TexTransform, XMMatrixTranspose(TexTransform));
 
             CurrentObjectCB->CopyData(R->ObjectCBIndex, ObjConstants);
 
             R->NumFramesDirty--;
+        }
+    }
+}
+
+void D3DApp::UpdateMaterialCBs(const GameTimer& gt)
+{
+    auto CurrentMaterialCB = CurrentFrameResource->MaterialCB.get();
+
+    for (auto& e : Materials)
+    {
+        Material* Mat = e.second.get();
+        if (Mat->NumFramesDirty > 0)
+        {
+            XMMATRIX MaterialTransform = XMLoadFloat4x4(&Mat->MatTransform);
+
+            MaterialConstants MatConstants;
+            MatConstants.DiffuseAlbedo = Mat->DiffuseAlbedo;
+            MatConstants.FresnelR0 = Mat->FresnelR0;
+            MatConstants.Roughness = Mat->Roughness;
+            XMStoreFloat4x4(&MatConstants.MatTransform, XMMatrixTranspose(MaterialTransform));
+
+            CurrentMaterialCB->CopyData(Mat->MatCBIndex, MatConstants);
+
+            Mat->NumFramesDirty--;
         }
     }
 }
@@ -793,29 +817,7 @@ void D3DApp::UpdateMainPassCBs(const GameTimer& gt)
     CurrentPassCB->CopyData(0, MainPassCB);
 }
 
-void D3DApp::UpdateMaterialCBs(const GameTimer& gt)
-{
-    auto CurrentMaterialCB = CurrentFrameResource->MaterialCB.get();
 
-    for (auto& e : Materials)
-    {
-        Material* Mat = e.second.get();
-        if (Mat->NumFramesDirty > 0)
-        {
-            XMMATRIX MaterialTransform = XMLoadFloat4x4(&Mat->MatTransform);
-
-            MaterialConstants MatConstants;
-            MatConstants.DiffuseAlbedo = Mat->DiffuseAlbedo;
-            MatConstants.FresnelR0 = Mat->FresnelR0;
-            MatConstants.Roughness = Mat->Roughness;
-            XMStoreFloat4x4(&MatConstants.MatTransform, XMMatrixTranspose(MaterialTransform));
-
-            CurrentMaterialCB->CopyData(Mat->MatCBIndex, MatConstants);
-            
-            Mat->NumFramesDirty--;
-        }
-    }
-}
 
 void D3DApp::LoadTextures()
 {
@@ -876,7 +878,7 @@ void D3DApp::BuildRootSignature()
 {
     CD3DX12_DESCRIPTOR_RANGE TextureTable;
     TextureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
+    
     CD3DX12_ROOT_PARAMETER SlotRootParameter[4];
 
     // Perfomance TIP: Order from most frequent to least frequent.
@@ -1069,7 +1071,7 @@ void D3DApp::BuildMaterials()
 void D3DApp::BuildRenderItems()
 {
     auto BoxRenderItem = std::make_unique<RenderItem>();
-    XMStoreFloat4x4(&BoxRenderItem->World, XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixTranslation(0.f, 0.f, 10.f));
+    //XMStoreFloat4x4(&BoxRenderItem->World, XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixTranslation(0.f, 0.f, 0.f));
     BoxRenderItem->ObjectCBIndex = 0;
     BoxRenderItem->Geo = Geometries["BoxGeo"].get();
     BoxRenderItem->Mat = Materials["WoodCrate"].get();

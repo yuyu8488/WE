@@ -24,7 +24,7 @@ cbuffer cbPerObject : register(b0)
 };
 
 // Constant data that varies per material.
-cbuffer cbPass : register(b2)
+cbuffer cbPass : register(b1)
 {
 	float4x4 gView;
 	float4x4 gInvView;
@@ -49,7 +49,7 @@ cbuffer cbPass : register(b2)
 	Light gLights[MaxLights];
 };
 
-cbuffer cbMaterial : register(b1)
+cbuffer cbMaterial : register(b2)
 {
 	float4 gDiffuseAlbedo;
 	float3 gFresnelR0;
