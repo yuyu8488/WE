@@ -7,22 +7,26 @@
 #include "MathHelper.h"
 #include "Material.h"
 #include "GameTimer.h"
+#include "Texture.h"
 
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 
+
+
 struct RenderItem
 {
 public:
 	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
 
 	int NumFramesDirty = NUM_FRAME_RESOURCES;
 	
 	UINT ObjectCBIndex = -1;
 
-	MeshGeometry* Geo = nullptr;
 	Material* Mat = nullptr;
+	MeshGeometry* Geo = nullptr;
 
 	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
@@ -53,26 +57,11 @@ public:
 	int Run();
 
 	LRESULT CALLBACK MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-public:
-	DirectX::XMFLOAT3 mEyePos = {0.f, 0.f, 0.f};
-	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
-
-	bool mIsWireframe = false;
-	float mTheta = 1.5f* DirectX::XM_PI;
-	float mPhi = DirectX::XM_PIDIV2 - 0.1f;
-	float mRadius = 50.0f;
-
-	float mSunTheta = 1.25f* DirectX::XM_PI;
-	float mSunPhi = DirectX::XM_PIDIV4;
-
-	POINT mLastMousePos;
 	
 protected:
 	void CreateRtvAndDsvDescriptorHeaps();
-	void OnResize();
 
+	void OnResize();
 	void Update(const GameTimer& gt);
 	void Draw(const GameTimer& gt);
 	
@@ -80,8 +69,8 @@ protected:
 	void OnMouseUp(WPARAM btnState, int x, int y);
 	void OnMouseMove(WPARAM btnState, int x, int y);
 
-	void UpdateCamera(const GameTimer& gt);
 	void OnKeyboardInput(const GameTimer& gt);
+	void UpdateCamera(const GameTimer& gt);
 
 	bool InitMainWindow();
 
@@ -142,9 +131,9 @@ protected:
 	D3D12_VIEWPORT mScreenViewport;
 	D3D12_RECT mScissorRect;
 	
-	UINT mRtvDescriptorSize = 0;
-	UINT mDsvDescriptorSize = 0;
-	UINT mCbvSrvUavDescriptorSize = 0;
+	UINT RtvDescriptorSize = 0;
+	UINT DsvDescriptorSize = 0;
+	UINT CbvSrvUavDescriptorSize = 0;
 
 	// Derived class should set these in derived constructor to customize starting values.
 	std::wstring mMainWndCaption = L"d3d App";
@@ -155,18 +144,24 @@ protected:
 	int mClientHeight = 600;
 
 private:
+	void AnimateMaterials(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMainPassCBs(const GameTimer& gt);
 	void UpdateMaterialCBs(const GameTimer& gt);
-	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& RenderItems);
 	
+	void LoadTextures();
 	void BuildRootSignature();
+	void BuildDescriptorHeaps();
 	void BuildShaderAndInputLayout();
 	void BuildShapeGeometry();
+	void BuildPSOs();
+	void BuildFrameResources();
 	void BuildMaterials();
 	void BuildRenderItems();
-	void BuildFrameResources();
-	void BuildPSOs();
+
+	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& RenderItems);
+
+	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
 private:
 	std::vector<std::unique_ptr<FrameResource>> FrameResources;
@@ -174,19 +169,39 @@ private:
 	int CurrentFrameResourceIndex = 0;
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignature = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CbvHeap = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> SrvHeap = nullptr;
+	//Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CbvDescriptorHeap = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> SrvDescriptorHeap = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> Geometries;
 	std::unordered_map<std::string, std::unique_ptr<Material>> Materials;
+	std::unordered_map<std::string, std::unique_ptr<Texture>> Textures;
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> Shaders;
-	std::unordered_map <std::string, Microsoft::WRL::ComPtr<ID3D12PipelineState>> PSOs;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
 
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> PSO;
+
+	// List of all render items;
 	std::vector<std::unique_ptr<RenderItem>> AllRenderItems;
+
+	// Render items divided by PSO
 	std::vector<RenderItem*> RenderItems;
 
 	PassConstants MainPassCB;
 	UINT PassCbvOffset = 0;
+
+protected:
+	DirectX::XMFLOAT3 mEyePos = { 0.f, 0.f, 0.f };
+	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
+
+	bool mIsWireframe = false;
+	float mTheta = 1.5f * DirectX::XM_PI;
+	float mPhi = DirectX::XM_PIDIV2 - 0.1f;
+	float mRadius = 50.0f;
+
+	float mSunTheta = 1.25f * DirectX::XM_PI;
+	float mSunPhi = DirectX::XM_PIDIV4;
+
+	POINT mLastMousePos;
 };

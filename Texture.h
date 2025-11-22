@@ -3,7 +3,7 @@
 #include <wrl.h>
 #include <d3d12.h>
 
-class Texture
+struct Texture
 {
     // Unique material name for lookup.
     std::string Name;
