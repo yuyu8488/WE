@@ -120,7 +120,6 @@ bool D3DApp::Initialize()
 
     // Reset the command list to prep for initialization commands.
     ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
-    //CbvSrvUavDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     LoadTextures();
     BuildRootSignature();
@@ -434,11 +433,11 @@ void D3DApp::OnMouseUp(WPARAM btnState, int x, int y)
 
 void D3DApp::OnMouseMove(WPARAM btnState, int x, int y)
 {
-    if((btnState & MK_LBUTTON) != 0)
+    if ((btnState & MK_LBUTTON) != 0)
     {
         // Make each pixel correspond to a quarter of a degree.
-        float dx = XMConvertToRadians(0.25f*static_cast<float>(x - mLastMousePos.x));
-        float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
+        float dx = XMConvertToRadians(0.25f * static_cast<float>(x - mLastMousePos.x));
+        float dy = XMConvertToRadians(0.25f * static_cast<float>(y - mLastMousePos.y));
 
         // Update angles based on input to orbit camera around box.
         mTheta += dx;
@@ -447,11 +446,11 @@ void D3DApp::OnMouseMove(WPARAM btnState, int x, int y)
         // Restrict the angle mPhi.
         mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
     }
-    else if((btnState & MK_RBUTTON) != 0)
+    else if ((btnState & MK_RBUTTON) != 0)
     {
         // Make each pixel correspond to 0.2 unit in the scene.
-        float dx = 0.2f*static_cast<float>(x - mLastMousePos.x);
-        float dy = 0.2f*static_cast<float>(y - mLastMousePos.y);
+        float dx = 0.2f * static_cast<float>(x - mLastMousePos.x);
+        float dy = 0.2f * static_cast<float>(y - mLastMousePos.y);
 
         // Update the camera radius based on input.
         mRadius += dx - dy;
@@ -472,7 +471,7 @@ void D3DApp::UpdateCamera(const GameTimer& gt)
 
     XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
     XMVECTOR target = XMVectorZero();
-    XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, .0f);
+    XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
     XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
     XMStoreFloat4x4(&mView, view);
@@ -480,21 +479,21 @@ void D3DApp::UpdateCamera(const GameTimer& gt)
 
 void D3DApp::OnKeyboardInput(const GameTimer& gt)
 {
-    const float dt = gt.DeltaTime();
+    //const float dt = gt.DeltaTime();
 
-    if (GetAsyncKeyState(VK_LEFT) & 0x8000)
-        mSunTheta -= 1.0f * dt;
+    //if (GetAsyncKeyState(VK_LEFT) & 0x8000)
+    //    mSunTheta -= 1.0f * dt;
 
-    if (GetAsyncKeyState(VK_RIGHT) & 0x8000)
-        mSunTheta += 1.0f * dt;
+    //if (GetAsyncKeyState(VK_RIGHT) & 0x8000)
+    //    mSunTheta += 1.0f * dt;
 
-    if (GetAsyncKeyState(VK_UP) & 0x8000)
-        mSunPhi -= 1.0f * dt;
+    //if (GetAsyncKeyState(VK_UP) & 0x8000)
+    //    mSunPhi -= 1.0f * dt;
 
-    if (GetAsyncKeyState(VK_DOWN) & 0x8000)
-        mSunPhi += 1.0f * dt;
+    //if (GetAsyncKeyState(VK_DOWN) & 0x8000)
+    //    mSunPhi += 1.0f * dt;
 
-    mSunPhi = MathHelper::Clamp(mSunPhi, 0.1f, XM_PIDIV2);
+    //mSunPhi = MathHelper::Clamp(mSunPhi, 0.1f, XM_PIDIV2);
 }
 
 bool D3DApp::InitMainWindow()
@@ -817,8 +816,6 @@ void D3DApp::UpdateMainPassCBs(const GameTimer& gt)
     CurrentPassCB->CopyData(0, MainPassCB);
 }
 
-
-
 void D3DApp::LoadTextures()
 {
     // TODO: UploadBuffer 템플릿 클래스를 사용하는 걸로 바꿔보기. 
@@ -944,7 +941,7 @@ void D3DApp::BuildShaderAndInputLayout()
     {
         {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
         {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-        {"TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
     };
 }
 
@@ -960,7 +957,6 @@ void D3DApp::BuildShapeGeometry()
 
     std::vector<Vertex> Vertices(Box.Vertices.size());
     
-
     for (size_t i = 0; i < Box.Vertices.size(); i++)
     {
         Vertices[i].Pos = Box.Vertices[i].Position;
@@ -1051,7 +1047,7 @@ void D3DApp::BuildFrameResources()
     for (int i = 0; i < NUM_FRAME_RESOURCES; ++i)
     {
         FrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(),
-            1, (UINT)AllRenderItems.size(), (UINT)Materials.size(), 0));
+            1, (UINT)AllRenderItems.size(), (UINT)Materials.size()));
     }
 }
 
@@ -1061,7 +1057,7 @@ void D3DApp::BuildMaterials()
     WoodCrate->Name = "WoodCrate";
     WoodCrate->MatCBIndex = 0;
     WoodCrate->DiffuseSrvHeapIndex = 0;
-    WoodCrate->DiffuseAlbedo = XMFLOAT4(1.0f, 1.f, 1.f, 1.f);
+    WoodCrate->DiffuseAlbedo = XMFLOAT4(1.f, 1.f, 1.f, 1.f);
     WoodCrate->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
     WoodCrate->Roughness = 0.2f;
 
@@ -1071,7 +1067,6 @@ void D3DApp::BuildMaterials()
 void D3DApp::BuildRenderItems()
 {
     auto BoxRenderItem = std::make_unique<RenderItem>();
-    //XMStoreFloat4x4(&BoxRenderItem->World, XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixTranslation(0.f, 0.f, 0.f));
     BoxRenderItem->ObjectCBIndex = 0;
     BoxRenderItem->Geo = Geometries["BoxGeo"].get();
     BoxRenderItem->Mat = Materials["WoodCrate"].get();

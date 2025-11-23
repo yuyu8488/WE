@@ -1,5 +1,5 @@
 #ifndef NUM_DIR_LIGHTS
-    #define NUM_DIR_LIGHTS 1
+    #define NUM_DIR_LIGHTS 3
 #endif
 
 #ifndef NUM_POINT_LIGHTS
@@ -103,7 +103,7 @@ float4 PS(VertexOut pin) : SV_Target
 	float3 toEyeW = normalize(gEyePosW - pin.PosW);
 
 	// Indirect lighting.
-	float4 ambient = gAmbientLight * gDiffuseAlbedo;
+	float4 ambient = gAmbientLight * diffuseAlbedo;
 
 	const float shininess = 1.0f - gRoughness;
 	Material mat = { diffuseAlbedo, gFresnelR0, shininess };

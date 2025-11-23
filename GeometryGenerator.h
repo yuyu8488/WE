@@ -88,11 +88,12 @@ public:
 
 	struct Vertex
 	{
+		Vertex() {}
 		Vertex(
-			const DirectX::XMFLOAT3& p = {0,0,0},
-			const DirectX::XMFLOAT3& n = {0,0,0},
-			const DirectX::XMFLOAT3& t = {0,0,0},
-			const DirectX::XMFLOAT2& uv = {0,0}) :
+			const DirectX::XMFLOAT3& p,
+			const DirectX::XMFLOAT3& n,
+			const DirectX::XMFLOAT3& t,
+			const DirectX::XMFLOAT2& uv) :
 			Position(p), Normal(n), TangentU(t), TexC(uv) {}
 
 		Vertex(
