@@ -333,7 +333,7 @@ void D3DApp::OnResize()
 
     FlushCommandQueue();
 
-    XMMATRIX P = XMMatrixPerspectiveFovLH(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+    XMMATRIX P = XMMatrixPerspectiveFovLH(0.25f * MathHelper::Pi, AspectRatio(), 0.1f, 1000.0f);
     XMStoreFloat4x4(&mProj, P);
 
     mScreenViewport.TopLeftX = 0;
@@ -449,14 +449,14 @@ void D3DApp::OnMouseMove(WPARAM btnState, int x, int y)
     else if ((btnState & MK_RBUTTON) != 0)
     {
         // Make each pixel correspond to 0.2 unit in the scene.
-        float dx = 0.2f * static_cast<float>(x - mLastMousePos.x);
-        float dy = 0.2f * static_cast<float>(y - mLastMousePos.y);
+        float dx = 0.01f * static_cast<float>(x - mLastMousePos.x);
+        float dy = 0.01f * static_cast<float>(y - mLastMousePos.y);
 
         // Update the camera radius based on input.
         mRadius += dx - dy;
 
         // Restrict the radius.
-        mRadius = MathHelper::Clamp(mRadius, 5.0f, 150.0f);
+        mRadius = MathHelper::Clamp(mRadius, 1.0f, 150.0f);
     }
 
     mLastMousePos.x = x;
@@ -818,8 +818,6 @@ void D3DApp::UpdateMainPassCBs(const GameTimer& gt)
 
 void D3DApp::LoadTextures()
 {
-    // TODO: UploadBuffer 템플릿 클래스를 사용하는 걸로 바꿔보기. 
-
     std::unique_ptr<uint8_t[]> ddsData;
     std::vector<D3D12_SUBRESOURCE_DATA> subresources;
     
@@ -847,15 +845,6 @@ void D3DApp::LoadTextures()
         D3D12_RESOURCE_STATE_GENERIC_READ,
         nullptr,
         IID_PPV_ARGS(WoodCrateTex->UploadHeap.GetAddressOf())));
-
-    //inline UINT64 UpdateSubresources(
-    //    _In_ ID3D12GraphicsCommandList * pCmdList,
-    //    _In_ ID3D12Resource * pDestinationResource,
-    //    _In_ ID3D12Resource * pIntermediate,
-    //    UINT64 IntermediateOffset,
-    //    _In_range_(0, D3D12_REQ_SUBRESOURCES) UINT FirstSubresource,
-    //    _In_range_(0, D3D12_REQ_SUBRESOURCES - FirstSubresource) UINT NumSubresources,
-    //    _In_reads_(NumSubresources) D3D12_SUBRESOURCE_DATA * pSrcData)
 
     auto BarrierToCopyDest = CD3DX12_RESOURCE_BARRIER::Transition(WoodCrateTex->Resource.Get(),
         D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
@@ -889,6 +878,8 @@ void D3DApp::BuildRootSignature()
     CD3DX12_ROOT_SIGNATURE_DESC RootSigDesc(4, SlotRootParameter,
         (UINT)StaticSamplers.size(), StaticSamplers.data(),
         D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+    //RootSigDesc.Init(4, SlotRootParameter, )
 
     Microsoft::WRL::ComPtr<ID3DBlob> SerializedRootSig = nullptr;
     Microsoft::WRL::ComPtr<ID3DBlob> ErrorBlob = nullptr;
