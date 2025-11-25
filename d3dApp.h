@@ -7,11 +7,13 @@
 #include "MathHelper.h"
 #include "Material.h"
 #include "GameTimer.h"
-#include "Texture.h"
+//#include "Texture.h"
+
 
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
+class FTextureManager;
 
 struct RenderItem
 {
@@ -172,7 +174,9 @@ private:
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> Geometries;
 	std::unordered_map<std::string, std::unique_ptr<Material>> Materials;
-	std::unordered_map<std::string, std::unique_ptr<Texture>> Textures;
+	//std::unordered_map<std::string, std::unique_ptr<Texture>> Textures;
+	FTextureManager* TextureManager;
+
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> Shaders;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;

@@ -7,6 +7,7 @@
 #include "GeometryGenerator.h"
 #include "Material.h"
 #include "UploadBuffer.h"
+#include "TextureManager.h"
 
 #include "DDSTextureLoader12.h"
 
@@ -117,6 +118,8 @@ bool D3DApp::Initialize()
     }
 
     OnResize();
+
+    TextureManager = new FTextureManager(md3dDevice.Get(), mCommandList.Get());
 
     // Reset the command list to prep for initialization commands.
     ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
@@ -818,51 +821,7 @@ void D3DApp::UpdateMainPassCBs(const GameTimer& gt)
 
 void D3DApp::LoadTextures()
 {
-    auto GrassTex = std::make_unique<Texture>();
-    GrassTex->Name = "GrassTex";
-    GrassTex->Filename = L"Textures/Grass.dds";
-
-    auto WaterTex = std::make_unique<Texture>();
-    WaterTex->Name = "WaterTex";
-    WaterTex->Filename = L"Textures/Water1.dds";
-
-    auto FenceTex = std::make_unique<Texture>();
-    FenceTex->Name = "FenceTex";
-    FenceTex->Filename = L"Textures/WireFence.dds";
-
-    ThrowIfFailed(DirectX::LoadDDSTextureFromFile(md3dDevice.Get(),
-        GrassTex->Filename.c_str(),
-        GrassTex->Resource.ReleaseAndGetAddressOf(),
-        GrassTex->DdsData,
-        GrassTex->Subresources));
-
-    const UINT64 uploadBufferSize = GetRequiredIntermediateSize(GrassTex->Resource.Get(),
-        0, (UINT)(GrassTex->Subresources.size()));
-
-    // Create GPU upload buffer.
-    CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
-    auto desc = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
-
-    ThrowIfFailed(md3dDevice->CreateCommittedResource(
-        &heapProps,
-        D3D12_HEAP_FLAG_NONE,
-        &desc,
-        D3D12_RESOURCE_STATE_GENERIC_READ,
-        nullptr,
-        IID_PPV_ARGS(GrassTex->UploadHeap.ReleaseAndGetAddressOf())));
-
-    auto BarrierToCopyDest = CD3DX12_RESOURCE_BARRIER::Transition(GrassTex->Resource.Get(),
-        D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-    mCommandList->ResourceBarrier(1, &BarrierToCopyDest);
-
-    UpdateSubresources(mCommandList.Get(), GrassTex->Resource.Get(), GrassTex->UploadHeap.Get(),
-        0, 0, static_cast<UINT>(GrassTex->Subresources.size()), GrassTex->Subresources.data());
-
-    auto BarrierToPixelShaderResource = CD3DX12_RESOURCE_BARRIER::Transition(GrassTex->Resource.Get(),
-        D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-    mCommandList->ResourceBarrier(1, &BarrierToPixelShaderResource);
-
-    Textures[GrassTex->Name] = std::move(GrassTex);
+    TextureManager->LoadTexture("GrassTex", L"Textures/Grass.dds");
 }
 
 void D3DApp::BuildRootSignature()
@@ -915,17 +874,18 @@ void D3DApp::BuildDescriptorHeaps()
     // Fill out heap with actual descriptors.
     CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-    auto GrassTex = Textures["GrassTex"]->Resource;
+    //auto GrassTex = Textures["GrassTex"]->Resource;
+    auto GrassTexResource = TextureManager->GetTexture("GrassTex")->Resource;
 
     D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
-    SrvDesc.Format = GrassTex->GetDesc().Format;
+    SrvDesc.Format = GrassTexResource->GetDesc().Format;
     SrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     SrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     SrvDesc.Texture2D.MostDetailedMip = 0;
-    SrvDesc.Texture2D.MipLevels = GrassTex->GetDesc().MipLevels;
+    SrvDesc.Texture2D.MipLevels = GrassTexResource->GetDesc().MipLevels;
     SrvDesc.Texture2D.ResourceMinLODClamp = 0.f;
 
-    md3dDevice->CreateShaderResourceView(GrassTex.Get(), &SrvDesc, hDescriptor);
+    md3dDevice->CreateShaderResourceView(GrassTexResource.Get(), &SrvDesc, hDescriptor);
 }
 
 void D3DApp::BuildShaderAndInputLayout()

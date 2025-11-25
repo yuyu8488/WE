@@ -1,15 +1,18 @@
 #pragma once
 
-#include <d3d12.h>
-#include "Texture.h"
-#include <unordered_map>
 
-class TextureManager
+#include <d3d12.h>
+#include <unordered_map>
+#include "Texture.h"
+
+class FTextureManager
 {
 public:
-	TextureManager(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList);
+	FTextureManager(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList);
 
-	std::shared_ptr<Texture> LoadTexture(const std::string& InTextureName, const std::wstring& InFileName);
+	void LoadTexture(const std::string& InTextureName, const std::wstring& InFileName);
+
+	Texture* GetTexture(const std::string& Name);
 
 private:
 	ID3D12Device* Device;
