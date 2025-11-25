@@ -119,7 +119,7 @@ bool D3DApp::Initialize()
 
     OnResize();
 
-    TextureManager = new FTextureManager(md3dDevice.Get(), mCommandList.Get());
+    TextureManager = std::make_unique<FTextureManager>(md3dDevice.Get(), mCommandList.Get());
 
     // Reset the command list to prep for initialization commands.
     ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
@@ -821,7 +821,7 @@ void D3DApp::UpdateMainPassCBs(const GameTimer& gt)
 
 void D3DApp::LoadTextures()
 {
-    TextureManager->LoadTexture("GrassTex", L"Textures/Grass.dds");
+    TextureManager->LoadTexture("T_Grass", L"Textures/Grass.dds");
 }
 
 void D3DApp::BuildRootSignature()
@@ -842,8 +842,6 @@ void D3DApp::BuildRootSignature()
     CD3DX12_ROOT_SIGNATURE_DESC RootSigDesc(4, SlotRootParameter,
         (UINT)StaticSamplers.size(), StaticSamplers.data(),
         D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-    //RootSigDesc.Init(4, SlotRootParameter, )
 
     Microsoft::WRL::ComPtr<ID3DBlob> SerializedRootSig = nullptr;
     Microsoft::WRL::ComPtr<ID3DBlob> ErrorBlob = nullptr;
@@ -875,7 +873,7 @@ void D3DApp::BuildDescriptorHeaps()
     CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
     //auto GrassTex = Textures["GrassTex"]->Resource;
-    auto GrassTexResource = TextureManager->GetTexture("GrassTex")->Resource;
+    auto GrassTexResource = TextureManager->GetTexture("T_Grass")->Resource;
 
     D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
     SrvDesc.Format = GrassTexResource->GetDesc().Format;
@@ -1010,7 +1008,7 @@ void D3DApp::BuildFrameResources()
 void D3DApp::BuildMaterials()
 {
     auto WoodCrate = std::make_unique<Material>();
-    WoodCrate->Name = "WoodCrate";
+    WoodCrate->Name = "Crate";
     WoodCrate->MatCBIndex = 0;
     WoodCrate->DiffuseSrvHeapIndex = 0;
     WoodCrate->DiffuseAlbedo = XMFLOAT4(1.f, 1.f, 1.f, 1.f);
@@ -1025,7 +1023,7 @@ void D3DApp::BuildRenderItems()
     auto BoxRenderItem = std::make_unique<RenderItem>();
     BoxRenderItem->ObjectCBIndex = 0;
     BoxRenderItem->Geo = Geometries["BoxGeo"].get();
-    BoxRenderItem->Mat = Materials["WoodCrate"].get();
+    BoxRenderItem->Mat = Materials["Crate"].get();
     BoxRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
     BoxRenderItem->IndexCount = BoxRenderItem->Geo->DrawArgs["Box"].IndexCount;
     BoxRenderItem->StartIndexLocation = BoxRenderItem->Geo->DrawArgs["Box"].StartIndexLocation;

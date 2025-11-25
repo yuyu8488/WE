@@ -57,7 +57,7 @@ public:
 	int Run();
 
 	LRESULT CALLBACK MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-	
+
 protected:
 	void CreateRtvAndDsvDescriptorHeaps();
 
@@ -174,8 +174,7 @@ private:
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> Geometries;
 	std::unordered_map<std::string, std::unique_ptr<Material>> Materials;
-	//std::unordered_map<std::string, std::unique_ptr<Texture>> Textures;
-	FTextureManager* TextureManager;
+	std::unique_ptr<FTextureManager> TextureManager;
 
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> Shaders;
 

@@ -21,8 +21,6 @@ void FTextureManager::LoadTexture(const std::string& InTextureName, const std::w
 		NewTexture->DdsData,
 		NewTexture->Subresources));
 
-    // ¹Ø¿¡°Å ¼öÁ¤...
-
     const UINT64 uploadBufferSize = GetRequiredIntermediateSize(NewTexture->Resource.Get(),
         0, (UINT)(NewTexture->Subresources.size()));
 
