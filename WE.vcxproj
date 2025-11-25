@@ -134,6 +134,7 @@
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="MathHelper.cpp" />
     <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="Waves.cpp" />
     <ClInclude Include="config.h" />
     <ClInclude Include="d3dApp.h" />
@@ -147,6 +148,7 @@
     <ClInclude Include="Material.h" />
     <ClInclude Include="MathHelper.h" />
     <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureManager.h" />
     <ClInclude Include="UploadBuffer.h" />
     <ClInclude Include="Vector2.h" />
     <ClInclude Include="Waves.h" />

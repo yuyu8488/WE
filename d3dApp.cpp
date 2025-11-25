@@ -818,21 +818,26 @@ void D3DApp::UpdateMainPassCBs(const GameTimer& gt)
 
 void D3DApp::LoadTextures()
 {
-    std::unique_ptr<uint8_t[]> ddsData;
-    std::vector<D3D12_SUBRESOURCE_DATA> subresources;
-    
-    auto WoodCrateTex = std::make_unique<Texture>();
-    WoodCrateTex->Name = "WoodCrateTex";
-    WoodCrateTex->Filename = L"Textures/WoodCrate01.dds";
-    
-    ThrowIfFailed(DirectX::LoadDDSTextureFromFile(md3dDevice.Get(),
-        WoodCrateTex->Filename.c_str(),
-        WoodCrateTex->Resource.ReleaseAndGetAddressOf(),
-        ddsData,
-        subresources));
+    auto GrassTex = std::make_unique<Texture>();
+    GrassTex->Name = "GrassTex";
+    GrassTex->Filename = L"Textures/Grass.dds";
 
-    const UINT64 uploadBufferSize = GetRequiredIntermediateSize(WoodCrateTex->Resource.Get(),
-        0, static_cast<UINT>(subresources.size()));
+    auto WaterTex = std::make_unique<Texture>();
+    WaterTex->Name = "WaterTex";
+    WaterTex->Filename = L"Textures/Water1.dds";
+
+    auto FenceTex = std::make_unique<Texture>();
+    FenceTex->Name = "FenceTex";
+    FenceTex->Filename = L"Textures/WireFence.dds";
+
+    ThrowIfFailed(DirectX::LoadDDSTextureFromFile(md3dDevice.Get(),
+        GrassTex->Filename.c_str(),
+        GrassTex->Resource.ReleaseAndGetAddressOf(),
+        GrassTex->DdsData,
+        GrassTex->Subresources));
+
+    const UINT64 uploadBufferSize = GetRequiredIntermediateSize(GrassTex->Resource.Get(),
+        0, (UINT)(GrassTex->Subresources.size()));
 
     // Create GPU upload buffer.
     CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
@@ -844,20 +849,20 @@ void D3DApp::LoadTextures()
         &desc,
         D3D12_RESOURCE_STATE_GENERIC_READ,
         nullptr,
-        IID_PPV_ARGS(WoodCrateTex->UploadHeap.GetAddressOf())));
+        IID_PPV_ARGS(GrassTex->UploadHeap.ReleaseAndGetAddressOf())));
 
-    auto BarrierToCopyDest = CD3DX12_RESOURCE_BARRIER::Transition(WoodCrateTex->Resource.Get(),
+    auto BarrierToCopyDest = CD3DX12_RESOURCE_BARRIER::Transition(GrassTex->Resource.Get(),
         D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
     mCommandList->ResourceBarrier(1, &BarrierToCopyDest);
 
-    UpdateSubresources(mCommandList.Get(), WoodCrateTex->Resource.Get(), WoodCrateTex->UploadHeap.Get(),
-        0, 0, static_cast<UINT>(subresources.size()), subresources.data());
+    UpdateSubresources(mCommandList.Get(), GrassTex->Resource.Get(), GrassTex->UploadHeap.Get(),
+        0, 0, static_cast<UINT>(GrassTex->Subresources.size()), GrassTex->Subresources.data());
 
-    auto BarrierToPixelShaderResource = CD3DX12_RESOURCE_BARRIER::Transition(WoodCrateTex->Resource.Get(),
+    auto BarrierToPixelShaderResource = CD3DX12_RESOURCE_BARRIER::Transition(GrassTex->Resource.Get(),
         D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
     mCommandList->ResourceBarrier(1, &BarrierToPixelShaderResource);
 
-    Textures[WoodCrateTex->Name] = std::move(WoodCrateTex);
+    Textures[GrassTex->Name] = std::move(GrassTex);
 }
 
 void D3DApp::BuildRootSignature()
@@ -910,17 +915,17 @@ void D3DApp::BuildDescriptorHeaps()
     // Fill out heap with actual descriptors.
     CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-    auto WoodCrateTex = Textures["WoodCrateTex"]->Resource;
+    auto GrassTex = Textures["GrassTex"]->Resource;
 
     D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
-    SrvDesc.Format = WoodCrateTex->GetDesc().Format;
+    SrvDesc.Format = GrassTex->GetDesc().Format;
     SrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     SrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     SrvDesc.Texture2D.MostDetailedMip = 0;
-    SrvDesc.Texture2D.MipLevels = WoodCrateTex->GetDesc().MipLevels;
+    SrvDesc.Texture2D.MipLevels = GrassTex->GetDesc().MipLevels;
     SrvDesc.Texture2D.ResourceMinLODClamp = 0.f;
 
-    md3dDevice->CreateShaderResourceView(WoodCrateTex.Get(), &SrvDesc, hDescriptor);
+    md3dDevice->CreateShaderResourceView(GrassTex.Get(), &SrvDesc, hDescriptor);
 }
 
 void D3DApp::BuildShaderAndInputLayout()
