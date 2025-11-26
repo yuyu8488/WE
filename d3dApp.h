@@ -7,7 +7,6 @@
 #include "MathHelper.h"
 #include "Material.h"
 #include "GameTimer.h"
-//#include "Texture.h"
 
 
 #pragma comment(lib,"d3dcompiler.lib")
@@ -148,7 +147,8 @@ private:
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMainPassCBs(const GameTimer& gt);
 	void UpdateMaterialCBs(const GameTimer& gt);
-	
+	void UpdateWaves(const GameTimer& gt);
+
 	void LoadTextures();
 	void BuildRootSignature();
 	void BuildDescriptorHeaps();

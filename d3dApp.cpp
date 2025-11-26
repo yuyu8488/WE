@@ -780,6 +780,10 @@ void D3DApp::UpdateMaterialCBs(const GameTimer& gt)
     }
 }
 
+void D3DApp::UpdateWaves(const GameTimer& gt)
+{
+}
+
 void D3DApp::UpdateMainPassCBs(const GameTimer& gt)
 {
     XMMATRIX View = XMLoadFloat4x4(&mView);
@@ -822,6 +826,8 @@ void D3DApp::UpdateMainPassCBs(const GameTimer& gt)
 void D3DApp::LoadTextures()
 {
     TextureManager->LoadTexture("T_Grass", L"Textures/Grass.dds");
+    TextureManager->LoadTexture("T_Water", L"Textures/Water1.dds");
+    TextureManager->LoadTexture("T_Fence", L"Textures/WireFence.dds");
 }
 
 void D3DApp::BuildRootSignature()
@@ -864,7 +870,7 @@ void D3DApp::BuildDescriptorHeaps()
     // Create SRV heap.
     D3D12_DESCRIPTOR_HEAP_DESC SrvHeapDesc = {};
     SrvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    SrvHeapDesc.NumDescriptors = 1;
+    SrvHeapDesc.NumDescriptors = 3;
     SrvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     SrvHeapDesc.NodeMask = 0;
     ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&SrvHeapDesc, IID_PPV_ARGS(&SrvDescriptorHeap)));
@@ -872,8 +878,9 @@ void D3DApp::BuildDescriptorHeaps()
     // Fill out heap with actual descriptors.
     CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-    //auto GrassTex = Textures["GrassTex"]->Resource;
     auto GrassTexResource = TextureManager->GetTexture("T_Grass")->Resource;
+    auto WaterTexResource = TextureManager->GetTexture("T_Water")->Resource;
+    auto FenceTexResource = TextureManager->GetTexture("T_Fence")->Resource;
 
     D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
     SrvDesc.Format = GrassTexResource->GetDesc().Format;
@@ -882,8 +889,17 @@ void D3DApp::BuildDescriptorHeaps()
     SrvDesc.Texture2D.MostDetailedMip = 0;
     SrvDesc.Texture2D.MipLevels = GrassTexResource->GetDesc().MipLevels;
     SrvDesc.Texture2D.ResourceMinLODClamp = 0.f;
-
     md3dDevice->CreateShaderResourceView(GrassTexResource.Get(), &SrvDesc, hDescriptor);
+    
+    hDescriptor.Offset(1, CbvSrvUavDescriptorSize);
+
+    SrvDesc.Format = WaterTexResource->GetDesc().Format;
+    md3dDevice->CreateShaderResourceView(WaterTexResource.Get(), &SrvDesc, hDescriptor);
+
+    hDescriptor.Offset(1, CbvSrvUavDescriptorSize);
+    
+    SrvDesc.Format = FenceTexResource->GetDesc().Format;
+    md3dDevice->CreateShaderResourceView(FenceTexResource.Get(), &SrvDesc, hDescriptor);
 }
 
 void D3DApp::BuildShaderAndInputLayout()
@@ -902,58 +918,9 @@ void D3DApp::BuildShaderAndInputLayout()
 void D3DApp::BuildShapeGeometry()
 {
     GeometryGenerator GeoGen;
-    GeometryGenerator::MeshData Box = GeoGen.CreateBox(1.f, 1.f, 1.f, 3);
+       
 
-    SubmeshGeometry BoxSubMesh;
-    BoxSubMesh.IndexCount = (UINT)Box.Indices32.size();
-    BoxSubMesh.StartIndexLocation = 0;
-    BoxSubMesh.BaseVertexLocation = 0;
 
-    std::vector<Vertex> Vertices(Box.Vertices.size());
-    
-    for (size_t i = 0; i < Box.Vertices.size(); i++)
-    {
-        Vertices[i].Pos = Box.Vertices[i].Position;
-        Vertices[i].Normal = Box.Vertices[i].Normal;
-        Vertices[i].TexC = Box.Vertices[i].TexC;
-    }
-
-    std::vector<std::uint16_t> Indices = Box.GetIndices16();
-
-    const UINT VbByteSize = (UINT)Vertices.size() * sizeof(Vertex);
-    const UINT IbByteSize = (UINT)Indices.size() * sizeof(std::uint16_t);
-
-    auto Geo = make_unique<MeshGeometry>();
-    Geo->Name = "BoxGeo";
-
-    ThrowIfFailed(D3DCreateBlob(VbByteSize, &Geo->VertexBufferCPU));
-    CopyMemory(Geo->VertexBufferCPU->GetBufferPointer(), Vertices.data(), VbByteSize);
-
-    ThrowIfFailed(D3DCreateBlob(IbByteSize, &Geo->IndexBufferCPU));
-    CopyMemory(Geo->IndexBufferCPU->GetBufferPointer(), Indices.data(), IbByteSize);
-
-    Geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(
-        md3dDevice.Get(),
-        mCommandList.Get(),
-        Vertices.data(),
-        VbByteSize,
-        Geo->VertexBufferUploader);
-
-    Geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(
-        md3dDevice.Get(),
-        mCommandList.Get(),
-        Indices.data(),
-        IbByteSize,
-        Geo->IndexBufferUploader);
-
-    Geo->VertexByteStride = sizeof(Vertex);
-    Geo->VertexBufferByteSize = VbByteSize;
-    Geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-    Geo->IndexBufferByteSize = IbByteSize;
-
-    Geo->DrawArgs["Box"] = BoxSubMesh;
-
-    Geometries[Geo->Name] = std::move(Geo);
 }
 
 void D3DApp::BuildPSOs()
