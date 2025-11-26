@@ -104,7 +104,7 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	float4 diffuseAlbedo = gDiffuseMap.Sample(gSamAnisotropicWrap, pin.TexC) * gDiffuseAlbedo;
+	float4 diffuseAlbedo = gDiffuseMap.Sample(gSamLinearWrap, pin.TexC) * gDiffuseAlbedo;
 
 #ifdef ALPHA_TEST
 	// 텍스처 알파가 0.1보다 작으면 픽셀을 폐기.
