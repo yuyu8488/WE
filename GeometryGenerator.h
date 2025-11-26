@@ -141,6 +141,10 @@ public:
 	MeshData CreateGrid(float width, float depth, uint32 m, uint32 n);
 	MeshData CreateQuad(float x, float y, float w, float h, float depth);
 
+public:
+	static float GetHillsHeight(float x, float z);
+	static DirectX::XMFLOAT3 GetHillsNormal(float x, float z);
+
 private:
 	void Subdivide(MeshData& meshData);
 	Vertex MidPoint(const Vertex& v0, const Vertex& v1);

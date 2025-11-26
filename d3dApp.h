@@ -7,11 +7,12 @@
 #include "MathHelper.h"
 #include "Material.h"
 #include "GameTimer.h"
-
+#include "Waves.h"
 
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
+
 class FTextureManager;
 
 struct RenderItem
@@ -32,6 +33,14 @@ public:
 	UINT IndexCount = 0;
 	UINT StartIndexLocation = 0;
 	UINT BaseVertexLocation = 0;
+};
+
+enum class RenderLayer : int
+{
+	Opaque = 0,
+	Transparent,
+	AlphaTested,
+	Count
 };
 
 class D3DApp
@@ -153,15 +162,18 @@ private:
 	void BuildRootSignature();
 	void BuildDescriptorHeaps();
 	void BuildShaderAndInputLayout();
-	void BuildShapeGeometry();
+	void BuildGeometries();
 	void BuildPSOs();
 	void BuildFrameResources();
 	void BuildMaterials();
 	void BuildRenderItems();
-
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& RenderItems);
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
+
+	void BuildLandGeometry();
+	void BuildBoxGeometry();
+	void BuildWaveGeometry();
 
 private:
 	std::vector<std::unique_ptr<FrameResource>> FrameResources;
@@ -169,29 +181,31 @@ private:
 	int CurrentFrameResourceIndex = 0;
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignature = nullptr;
-	//Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CbvDescriptorHeap = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CbvDescriptorHeap = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> SrvDescriptorHeap = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> Geometries;
 	std::unordered_map<std::string, std::unique_ptr<Material>> Materials;
+	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> Shaders;
+	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12PipelineState>> PSOs;
+
 	std::unique_ptr<FTextureManager> TextureManager;
 
-	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> Shaders;
-
 	std::vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
-
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> PSO;
 
 	// List of all render items;
 	std::vector<std::unique_ptr<RenderItem>> AllRenderItems;
 
 	// Render items divided by PSO
-	std::vector<RenderItem*> RenderItems;
+	std::vector<RenderItem*> RenderItemLayer[(int)RenderLayer::Count];
 
 	PassConstants MainPassCB;
 	UINT PassCbvOffset = 0;
 
-protected:
+	RenderItem* WavesRenderItem = nullptr;
+	std::unique_ptr<Waves> mWaves;
+
+private:
 	DirectX::XMFLOAT3 mEyePos = { 0.f, 0.f, 0.f };
 	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
