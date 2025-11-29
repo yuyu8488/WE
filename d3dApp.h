@@ -38,21 +38,23 @@ public:
 enum class RenderLayer : int
 {
 	Opaque = 0,
+	Mirrors,
+	Reflected,
 	Transparent,
-	AlphaTested,
-	Count
+	Shadow,
+	Count,
 };
 
-class D3DApp
+class D3D12
 {
 public:
-	D3DApp(HINSTANCE hInstance);
-	D3DApp(const D3DApp& rhs) = delete;
-	D3DApp& operator=(const D3DApp& rhs) = delete;
-	virtual ~D3DApp();
+	D3D12(HINSTANCE hInstance);
+	D3D12(const D3D12& rhs) = delete;
+	D3D12& operator=(const D3D12& rhs) = delete;
+	virtual ~D3D12();
 
 public:
-	static D3DApp* GetApp();
+	static D3D12* GetApp();
 
 	HINSTANCE AppInstance() const;
 	HWND MainWindow() const;
@@ -81,7 +83,6 @@ protected:
 	void UpdateCamera(const GameTimer& gt);
 
 	bool InitMainWindow();
-
 	bool InitDirect3D();
 	void CreateCommandObjects();
 	void CreateSwapChain();
@@ -101,7 +102,7 @@ protected:
 	//***************************************************************************************
 	// Initialize D3D12 Member variables
 	//***************************************************************************************
-	static D3DApp* mApp;
+	static D3D12* mApp;
 
 	HINSTANCE mhAppInst = nullptr;
 	HWND mhMainWnd = nullptr;
@@ -157,6 +158,7 @@ private:
 	void UpdateMainPassCBs(const GameTimer& gt);
 	void UpdateMaterialCBs(const GameTimer& gt);
 	void UpdateWaves(const GameTimer& gt);
+	void UpdateReflectedPassCB(const GameTimer& gt);
 
 	void LoadTextures();
 	void BuildRootSignature();
@@ -174,32 +176,40 @@ private:
 	void BuildLandGeometry();
 	void BuildBoxGeometry();
 	void BuildWaveGeometry();
+	void BuildRoomGeometry();
+	void BuildSkullGeometry();
 
 private:
-	std::vector<std::unique_ptr<FrameResource>> FrameResources;
-	FrameResource* CurrentFrameResource = nullptr;
-	int CurrentFrameResourceIndex = 0;
+	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
+	FrameResource* mCurrFrameResource = nullptr;
+	int mCurrFrameResourceIndex = 0;
 
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignature = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CbvDescriptorHeap = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> SrvDescriptorHeap = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 
-	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> Geometries;
-	std::unordered_map<std::string, std::unique_ptr<Material>> Materials;
-	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> Shaders;
-	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12PipelineState>> PSOs;
+	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
+	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
+	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> mShaders;
+	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
+
+	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 
 	std::unique_ptr<FTextureManager> TextureManager;
 
-	std::vector<D3D12_INPUT_ELEMENT_DESC> InputLayout;
+	// Cache render Items of interest.
+	RenderItem* mSkullRitem = nullptr;
+	RenderItem* mReflectedSkullRitem = nullptr;
+	RenderItem* mShadowedSkullRitem = nullptr;
 
 	// List of all render items;
-	std::vector<std::unique_ptr<RenderItem>> AllRenderItems;
+	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 
 	// Render items divided by PSO
-	std::vector<RenderItem*> RenderItemLayer[(int)RenderLayer::Count];
+	std::vector<RenderItem*> mRitemLayer[(int)RenderLayer::Count];
 
-	PassConstants MainPassCB;
+	PassConstants mMainPassCB;
+	PassConstants ReflectedPassCB;
 	UINT PassCbvOffset = 0;
 
 	RenderItem* WavesRenderItem = nullptr;
@@ -214,9 +224,6 @@ private:
 	float mTheta = 1.3f * DirectX::XM_PI;
 	float mPhi = 0.4f * DirectX::XM_PI;
 	float mRadius = 2.5f;
-
-	float mSunTheta = 1.25f * DirectX::XM_PI;
-	float mSunPhi = DirectX::XM_PIDIV4;
 
 	POINT mLastMousePos;
 };

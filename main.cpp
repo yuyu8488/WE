@@ -12,7 +12,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 
 	try
 	{
-		D3DApp Renderer(hInstance);
+		D3D12 Renderer(hInstance);
 		if (!Renderer.Initialize())
 			return 0;
 
